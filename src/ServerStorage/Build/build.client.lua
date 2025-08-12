@@ -5,49 +5,6 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local player = game:GetService("Players").LocalPlayer
 
-local RotationTypes = {
-	Two = "Two",
-	Three = "Three",
-	Four = "Four",
-	Ground = "Ground",
-}
-
-local ROTATIONS = {
-	[RotationTypes.Two] = {
-		0,
-		180,
-	},
-
-	[RotationTypes.Three] = {
-		0,
-		90,
-		-90,
-	},
-
-	[RotationTypes.Four] = {
-		0,
-		90,
-		180,
-		270,
-	},
-
-	[RotationTypes.Ground] = {
-		0,
-		90,
-		180,
-		270,
-	},
-}
-
-local ATTACHMENT_ROTATION_TYPE_MAP: { [string]: string } = {
-	floor = RotationTypes.Two,
-	left = RotationTypes.Three,
-	right = RotationTypes.Three,
-	front = RotationTypes.Three,
-	back = RotationTypes.Three,
-	default = RotationTypes.Four,
-}
-
 local structureModels = ReplicatedStorage.structures
 
 local camera = game.Workspace.CurrentCamera
@@ -89,14 +46,16 @@ local function mouseRaycast(params: RaycastParams?): (Vector3, RaycastResult?)
 	return if res then res.Position else ray.Origin + ray.Direction * L, res
 end
 
-local function getStructureFromInstance(instance: Instance?): Instance?
-	while instance and instance.Parent ~= structuresContainer do
-		instance = instance.Parent
+local function getStructureFromInstance(instance: Instance): Instance?
+	local parent: Instance? = instance
+	while parent and parent.Parent ~= structuresContainer do
+		parent = parent.Parent
 	end
-	return instance
+	return parent
 end
 
-local function onPreRenderBuildMode(previewModel: Model, rotation: number): (string, BasePart?)
+local SNAP_GRID_SIZE = 1
+local function onPreRenderBuildMode(previewModel: Model, rotation: number): BasePart?
 	local rotationOffset = CFrame.Angles(0, rotation, 0)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = { player.Character, previewModel }
@@ -109,15 +68,16 @@ local function onPreRenderBuildMode(previewModel: Model, rotation: number): (str
 			local att = prim:FindFirstChild(name) :: Attachment?
 			if att then
 				previewModel:PivotTo(res.Instance.CFrame * rotationOffset * att.CFrame:Inverse())
-				return ATTACHMENT_ROTATION_TYPE_MAP[name] or RotationTypes.Four, nil
+				return
 			end
 		end
 	end
 
 	local groundAtt = prim:FindFirstChild("ground") :: Attachment
-	previewModel:PivotTo(CFrame.new(pos) * rotationOffset * groundAtt.CFrame:Inverse())
-	local rotationType = if res and res.Instance.Anchored then RotationTypes.Ground else RotationTypes.Four
-	return rotationType, if res and getStructureFromInstance(res.Instance) then res.Instance else nil
+	local gridPos = pos / SNAP_GRID_SIZE
+	gridPos = Vector3.new(math.round(gridPos.X), math.round(gridPos.Y), math.round(gridPos.Z))
+	previewModel:PivotTo(CFrame.new(gridPos * SNAP_GRID_SIZE) * rotationOffset * groundAtt.CFrame:Inverse())
+	return if res and getStructureFromInstance(res.Instance) then res.Instance else nil
 end
 
 local function onPreRenderDeleteMode(): Model?
@@ -191,7 +151,11 @@ local function build(sourceModel: Model, cf: CFrame, weldTo: BasePart?)
 	end
 
 	local groundAtt = (model.PrimaryPart :: BasePart):FindFirstChild("ground") :: Attachment
-	local groundRes = game.Workspace:Raycast(model:GetPivot().Position, groundAtt.CFrame.Position, groundParams)
+	local groundRes = game.Workspace:Raycast(
+		model:GetPivot().Position,
+		groundAtt.CFrame.Position + Vector3.new(0, -2, 0),
+		groundParams
+	)
 	if groundRes then
 		local w = Instance.new("WeldConstraint")
 		w.Part0 = model.PrimaryPart :: BasePart
@@ -245,19 +209,15 @@ local function delete(model: Model)
 
 	local weldRefs = model:FindFirstChild("weldRefs") :: Folder
 	for _, v in weldRefs:GetChildren() :: any do
-		v.Value:Destroy()
+		if v.Value then
+			v.Value:Destroy()
+		end
 	end
 
 	model:Destroy()
 end
 
 local tool = script.Parent
-local rotations: any = setmetatable({}, {
-	__index = function(t, i)
-		return 0
-	end,
-})
-
 local function setup(): () -> ()
 	local deleteHighlight = Instance.new("Highlight")
 	deleteHighlight.FillColor = Color3.new(1, 0, 0)
@@ -265,6 +225,9 @@ local function setup(): () -> ()
 	deleteHighlight.Parent = game:GetService("Lighting")
 
 	local modelList = structureModels:GetChildren()
+	table.sort(modelList, function(a, b)
+		return a:GetAttribute("order") < b:GetAttribute("order")
+	end)
 	local sourceModel
 	local previewModel
 	local function cycleModel(delta: number)
@@ -280,7 +243,7 @@ local function setup(): () -> ()
 	cycleModel(0)
 
 	local inDeleteMode = false
-	local currentRotationType = RotationTypes.Four
+	local currentRotation = 0
 	local currentWeldTo: BasePart?
 
 	local connections = {
@@ -288,10 +251,7 @@ local function setup(): () -> ()
 			if inDeleteMode then
 				deleteHighlight.Adornee = onPreRenderDeleteMode()
 			else
-				currentRotationType, currentWeldTo = onPreRenderBuildMode(
-					previewModel,
-					math.rad(ROTATIONS[currentRotationType][rotations[currentRotationType] + 1])
-				)
+				currentWeldTo = onPreRenderBuildMode(previewModel, math.rad(90 * currentRotation))
 			end
 		end),
 
@@ -299,11 +259,12 @@ local function setup(): () -> ()
 			local isShiftDown = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
 			if input.KeyCode == Enum.KeyCode.R then
 				if not inDeleteMode then
-					rotations[currentRotationType] = (rotations[currentRotationType] + if isShiftDown then -1 else 1)
-						% #ROTATIONS[currentRotationType]
+					currentRotation = (currentRotation + if isShiftDown then -1 else 1) % 4
 				end
 			elseif input.KeyCode == Enum.KeyCode.E then
-				cycleModel(if isShiftDown then -1 else 1)
+				if not inDeleteMode then
+					cycleModel(if isShiftDown then -1 else 1)
+				end
 			elseif input.KeyCode == Enum.KeyCode.X then
 				inDeleteMode = not inDeleteMode
 				deleteHighlight.Enabled = inDeleteMode
