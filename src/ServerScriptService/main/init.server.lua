@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local remotes = ReplicatedStorage.remotes
+local toolTemplate = ServerStorage.ToolTemplate
 
 remotes.explodeAt.OnServerEvent:Connect(function(_, pos: Vector3)
 	local explosion = Instance.new("Explosion")
@@ -14,7 +15,18 @@ remotes.explodeAt.OnServerEvent:Connect(function(_, pos: Vector3)
 	explosion.Parent = game.Workspace
 end)
 
+local function createTool(name: string): Tool
+	local tool = toolTemplate:Clone()
+	tool.Name = name
+	tool.server.Enabled = true
+	return tool
+end
+
 local function onPlayerAdded(player: Player)
+	if RunService:IsStudio() then
+		player.CanLoadCharacterAppearance = false
+	end
+
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 
@@ -28,10 +40,12 @@ local function onPlayerAdded(player: Player)
 			ServerStorage.Build:Clone().Parent = backpack
 			ServerStorage.Explode:Clone().Parent = backpack
 		end
+
+		createTool("Rocket Launcher").Parent = backpack
 	end
 
-	if player:FindFirstChild("Backpack") then
-		onNewBackpack(player)
+	if player.Backpack then
+		onNewBackpack(player.Backpack)
 	end
 	player.CharacterAdded:Connect(function(char)
 		if RunService:IsStudio() then
