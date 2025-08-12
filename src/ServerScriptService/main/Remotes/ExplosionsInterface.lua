@@ -135,12 +135,14 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 		speed = math.min(rocketMaxSpeed, speed + rocketAcceleration * dt)
 		local dist = speed * dt
 		distanceTraveled += dist
+		local pivot = rocket:GetPivot()
+		local newCF = pivot + dir * dist
 		if distanceTraveled > rocketMaxDistance then
+			explodeAtPosition(newCF.Position, 15, dir * 1500, team)
 			cleanup()
 			return
 		end
 
-		local pivot = rocket:GetPivot()
 		local res = game.Workspace:Raycast(pivot.Position, dir * dist, params)
 		if res then
 			explodeAtPosition(res.Position, 15, dir * 1500, team)
@@ -148,7 +150,7 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 			return
 		end
 
-		rocket:PivotTo(pivot + dir * dist)
+		rocket:PivotTo(newCF)
 	end)
 end
 
