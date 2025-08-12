@@ -1,7 +1,9 @@
 --!strict
 
-local Players = game:GetService("Players")
+local ServerScriptService = game:GetService("ServerScriptService")
 local Teams = game:GetService("Teams")
+
+local Util = require(ServerScriptService.Util)
 
 local TeamDoor = {}
 TeamDoor.__index = TeamDoor
@@ -51,36 +53,20 @@ function TeamDoor.new(model: Model, team: Team, spawnLocations: { SpawnLocation 
 	return self
 end
 
-local function getPlayerAndCharacterFromInstance(instance: Instance): (Player?, Model?)
-	local player = instance:IsA("Model") and Players:GetPlayerFromCharacter(instance)
-	if player then
-		return player, instance :: Model
-	end
-
-	local potentialCharacter = instance:FindFirstAncestorOfClass("Model")
-	if not potentialCharacter then
-		return nil, nil
-	end
-
-	return getPlayerAndCharacterFromInstance(potentialCharacter)
-end
-
 function TeamDoor._onTouched(self: TeamDoor, other: BasePart)
 	if not self.canJoin then
 		return
 	end
 
-	local player, character = getPlayerAndCharacterFromInstance(other)
+	local player, character = Util.getPlayerAndCharacterFromInstance(other)
 	if not (player and character) then
 		return
 	end
 
 	player.Team = self.team
 
-	local hrp = character.PrimaryPart
-	if hrp then
-		hrp.Position = self.spawnLocations[math.random(1, #self.spawnLocations)].Position
-	end
+	local spawnLocation = self.spawnLocations[math.random(1, #self.spawnLocations)]
+	character:PivotTo(spawnLocation.CFrame + Vector3.new(0, 5, 0))
 end
 
 function TeamDoor.UpdateStatus(self: TeamDoor)

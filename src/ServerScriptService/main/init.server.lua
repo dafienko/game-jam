@@ -1,19 +1,21 @@
 --!strict
 
+game.Workspace.sandbox:Destroy()
+
 local ServerStorage = game:GetService("ServerStorage")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
+local ExplosionsInterface = require(script.Remotes.ExplosionsInterface)
+
 local remotes = ReplicatedStorage.remotes
 local toolTemplate = ServerStorage.ToolTemplate
 
-remotes.explodeAt.OnServerEvent:Connect(function(_, pos: Vector3)
-	local explosion = Instance.new("Explosion")
-	explosion.Position = pos
-	explosion.BlastRadius = 5
-	explosion.Parent = game.Workspace
-end)
+if RunService:IsStudio() then
+	remotes.explodeAtPosition.OnServerEvent:Connect(ExplosionsInterface.onExplodeAtPosition)
+end
+remotes.shootRocketAtPosition.OnServerEvent:Connect(ExplosionsInterface.onShootRocketAtPosition)
 
 local function createTool(name: string): Tool
 	local tool = toolTemplate:Clone()

@@ -13,6 +13,7 @@ handle.Parent = script.Parent
 
 local model = ReplicatedStorage.assets.tools[script.Parent.Name]:Clone()
 model:PivotTo(handle.CFrame)
+model.Name = "Model"
 
 local w = Instance.new("WeldConstraint")
 w.Part0 = handle
