@@ -171,6 +171,13 @@ function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, 
 	local muzzleAttachment = mainPart and mainPart:FindFirstChild("muzzle") :: Attachment?
 	local shootFrom = if muzzleAttachment then muzzleAttachment.WorldCFrame else rpg:GetPivot()
 	local rocket = rocketTemplate:Clone()
+	for _, v in rocket:GetDescendants() do
+		if v:IsA("BasePart") then
+			v.Color = player.TeamColor.Color
+		elseif v:IsA("ParticleEmitter") then
+			v.Color = ColorSequence.new(player.TeamColor.Color)
+		end
+	end
 	rocket:PivotTo(CFrame.new(shootFrom.Position, targetPosition))
 	propelRocket(rocket, player.Team, player)
 	rocket.Parent = game.Workspace

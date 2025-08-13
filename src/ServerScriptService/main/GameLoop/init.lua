@@ -2,17 +2,19 @@
 
 local Teams = game:GetService("Teams")
 local ServerStorage = game:GetService("ServerStorage")
+local Players = game:GetService("Players")
 
 local TeamDoor = require(script.TeamDoor)
 
 local GAME_DURATION_SECONDS = 60 * 10
+local INTERMISSION_SECONDS = 5
 
 local maps = ServerStorage.Maps
 local Lobby = game.Workspace.Lobby
 local joinDoorTemplate = Lobby.joinDoorTemplate
 joinDoorTemplate.Parent = nil
 
-local function loadMapModel(sourceMapModel: Model): () -> ()
+local function startNewGame(sourceMapModel: Model): () -> ()
 	local model = sourceMapModel:Clone()
 	local teamColorSpawns = {}
 	for _, v in model:GetDescendants() do
@@ -55,16 +57,35 @@ local function loadMapModel(sourceMapModel: Model): () -> ()
 		for _, v in teams do
 			v:Destroy()
 		end
+		for _, v in Players:GetPlayers() do
+			local char = v.Character
+			if not char then
+				continue
+			end
+
+			char:SetAttribute("lastTaggedBy", nil)
+			local humanoid = char:FindFirstChild("Humanoid")
+			if not humanoid then
+				continue
+			end
+
+			humanoid.Health = 0
+		end
+	end
+end
+
+local function countdown(seconds: number)
+	for t = seconds, 0, -1 do
+		game.Workspace:SetAttribute("timeRemaining", t)
+		task.wait(1)
 	end
 end
 
 while true do
-	local cleanup = loadMapModel(maps.Map1)
-	for t = GAME_DURATION_SECONDS, 0, -1 do
-		game.Workspace:SetAttribute("timeRemaining", t)
-		task.wait(1)
-	end
+	local cleanup = startNewGame(maps.Map1)
+	countdown(GAME_DURATION_SECONDS)
 	cleanup()
+	countdown(INTERMISSION_SECONDS)
 end
 
 return nil

@@ -50,11 +50,10 @@ local function onPlayerAdded(player: Player)
 		onNewBackpack(player.Backpack)
 	end
 	player.CharacterAdded:Connect(function(char)
-		if RunService:IsStudio() then
-			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid?
-			if humanoid then
-				humanoid.WalkSpeed = 60
-			end
+		local humanoid = char:FindFirstChild("Humanoid") :: Humanoid?
+		if humanoid then
+			humanoid.WalkSpeed = if RunService:IsStudio() then 60 else 24
+			humanoid.JumpHeight = 10
 		end
 		onNewBackpack(player.Backpack)
 	end)
