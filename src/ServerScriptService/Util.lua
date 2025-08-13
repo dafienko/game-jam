@@ -18,4 +18,27 @@ function Util.getPlayerAndCharacterFromInstance(instance: Instance): (Player?, M
 	return Util.getPlayerAndCharacterFromInstance(potentialCharacter)
 end
 
+function Util.playerDamageCharacter(player: Player, character: Model, amount: number)
+	local humanoid = character:FindFirstChild("Humanoid") :: Humanoid?
+	if not humanoid then
+		return
+	end
+
+	if humanoid.Health <= 0 then
+		return
+	end
+
+	character:SetAttribute("lastTaggedBy", player.UserId)
+	character:SetAttribute("taggedAtTime", time())
+	humanoid:TakeDamage(amount)
+end
+
+function Util.canTeamAttackTeam(attackingTeam: Team?, team: Team?): boolean
+	if not team then
+		return false
+	end
+
+	return attackingTeam ~= team
+end
+
 return Util

@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local ExplosionsInterface = require(script.Remotes.ExplosionsInterface)
+local PlayerData = require(script.PlayerData)
 
 local remotes = ReplicatedStorage.remotes
 local toolTemplate = ServerStorage.ToolTemplate
@@ -21,7 +22,31 @@ local function createTool(name: string): Tool
 	local tool = toolTemplate:Clone()
 	tool.Name = name
 	tool.server.Enabled = true
+
+	if not ReplicatedStorage.modules.game.tools:FindFirstChild(name) then
+		tool.client:Destroy()
+	end
+
 	return tool
+end
+
+local function checkAttributeKill(char: Model)
+	local taggedByUserId = char:GetAttribute("lastTaggedBy") :: number?
+	local taggedAtTime = char:GetAttribute("taggedAtTime") :: number?
+	if not (taggedAtTime and taggedByUserId) then
+		return
+	end
+
+	if time() - taggedAtTime > 10 then
+		return
+	end
+
+	local taggingPlayer = Players:GetPlayerByUserId(taggedByUserId)
+	if not taggingPlayer then
+		return
+	end
+
+	PlayerData.addKO(taggingPlayer)
 end
 
 local function onPlayerAdded(player: Player)
@@ -29,11 +54,29 @@ local function onPlayerAdded(player: Player)
 		player.CanLoadCharacterAppearance = false
 	end
 
+	local playerData = PlayerData.loadPlayerData(player)
+	if not playerData then
+		return
+	end
+
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 
-	Instance.new("IntValue", leaderstats).Name = "KO's"
-	Instance.new("IntValue", leaderstats).Name = "Points"
+	local KOsValue = Instance.new("IntValue")
+	KOsValue.Value = playerData.KOs
+	KOsValue.Name = "KO's"
+	KOsValue.Parent = leaderstats
+	PlayerData.onKOsChanged(player, function(kos)
+		KOsValue.Value = kos
+	end)
+
+	local StudsValue = Instance.new("IntValue")
+	StudsValue.Value = playerData.Studs
+	StudsValue.Name = "Points"
+	StudsValue.Parent = leaderstats
+	PlayerData.onStudsChanged(player, function(studs)
+		StudsValue.Value = studs
+	end)
 
 	leaderstats.Parent = player
 
@@ -44,24 +87,42 @@ local function onPlayerAdded(player: Player)
 		end
 
 		createTool("Rocket Launcher").Parent = backpack
+		createTool("Sword").Parent = backpack
 	end
 
 	if player.Backpack then
 		onNewBackpack(player.Backpack)
 	end
-	player.CharacterAdded:Connect(function(char)
-		local humanoid = char:FindFirstChild("Humanoid") :: Humanoid?
-		if humanoid then
-			humanoid.WalkSpeed = if RunService:IsStudio() then 60 else 24
-			humanoid.JumpHeight = 10
-		end
+
+	player.CharacterAdded:Connect(function(char: any)
+		local humanoid: Humanoid = char.Humanoid
+		humanoid.WalkSpeed = if RunService:IsStudio() then 60 else 24
+		humanoid.JumpHeight = 10
+		humanoid.Died:Connect(function()
+			checkAttributeKill(char)
+
+			task.wait(3)
+			char:Destroy()
+			if player.Parent ~= Players then
+				return
+			end
+
+			player:LoadCharacter()
+		end)
 		onNewBackpack(player.Backpack)
 	end)
+
+	player:LoadCharacter()
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
+
 for _, v in Players:GetPlayers() do
 	task.spawn(onPlayerAdded, v)
 end
+
+Players.PlayerRemoving:Connect(function(player)
+	PlayerData.unloadPlayerData(player)
+end)
 
 require(script.GameLoop)

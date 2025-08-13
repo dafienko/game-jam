@@ -7,7 +7,9 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Players = game:GetService("Players")
 
 local t = require(ReplicatedStorage.modules.dependencies.t)
+
 local Util = require(ServerScriptService.Util)
+local PlayerData = require(ServerScriptService.main.PlayerData)
 
 local rocketTemplate = ReplicatedStorage.assets.rocket
 
@@ -26,7 +28,7 @@ local function applyExplosionImpulse(
 	end
 end
 
-local function explodeAtPosition(position: Vector3, blastRadius: number, impulse: Vector3 | number, ignoreTeam: Team?)
+local function explodeAtPosition(fromPlayer: Player?, position: Vector3, blastRadius: number, impulse: Vector3 | number)
 	local explosion = Instance.new("Explosion")
 	explosion.Position = position
 	explosion.BlastRadius = blastRadius
@@ -35,8 +37,8 @@ local function explodeAtPosition(position: Vector3, blastRadius: number, impulse
 	explosion.DestroyJointRadiusPercent = 0
 
 	for _, v in Players:GetPlayers() do
-		if (ignoreTeam and v.Team == ignoreTeam) or not v.Team then
-			continue
+		if fromPlayer and not Util.canTeamAttackTeam(fromPlayer.Team, v.Team) then
+			return
 		end
 
 		local char = v.Character
@@ -53,7 +55,7 @@ local function explodeAtPosition(position: Vector3, blastRadius: number, impulse
 
 		local D = 5
 		local strength = D / math.max(dist, D)
-		humanoid:TakeDamage(strength * 100)
+
 		if humanoid.Health <= 0 then
 			for _, v in char:GetChildren() do
 				if not v:IsA("BasePart") then
@@ -65,6 +67,7 @@ local function explodeAtPosition(position: Vector3, blastRadius: number, impulse
 		end
 	end
 
+	local ignoreTeam = fromPlayer and fromPlayer.Team
 	explosion.Hit:Connect(function(part, dist)
 		local player, char = Util.getPlayerAndCharacterFromInstance(part)
 		if player or char then
@@ -85,6 +88,9 @@ local function explodeAtPosition(position: Vector3, blastRadius: number, impulse
 				end
 
 				v:Destroy()
+				if fromPlayer then
+					PlayerData.updateStuds(fromPlayer, 1)
+				end
 			end
 		end
 
@@ -99,7 +105,7 @@ if RunService:IsStudio() then
 	function ExplosionsInterface.onExplodeAtPosition(player: Player, position: Vector3)
 		assert(t.Vector3(position))
 
-		explodeAtPosition(position, 15, 500, player.Team)
+		explodeAtPosition(player, position, 15, 500)
 	end
 end
 
@@ -138,14 +144,14 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 		local pivot = rocket:GetPivot()
 		local newCF = pivot + dir * dist
 		if distanceTraveled > rocketMaxDistance then
-			explodeAtPosition(newCF.Position, 15, dir * 1500, team)
+			explodeAtPosition(player, newCF.Position, 15, dir * 1500)
 			cleanup()
 			return
 		end
 
 		local res = game.Workspace:Raycast(pivot.Position, dir * dist, params)
 		if res then
-			explodeAtPosition(res.Position, 15, dir * 1500, team)
+			explodeAtPosition(player, res.Position, 15, dir * 1500)
 			cleanup()
 			return
 		end
