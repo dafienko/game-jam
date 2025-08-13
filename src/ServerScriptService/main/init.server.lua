@@ -88,6 +88,7 @@ local function onPlayerAdded(player: Player)
 
 		createTool("Rocket Launcher").Parent = backpack
 		createTool("Sword").Parent = backpack
+		createTool("Bomb").Parent = backpack
 	end
 
 	if player.Backpack then

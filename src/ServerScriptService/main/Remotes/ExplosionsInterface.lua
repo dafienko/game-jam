@@ -1,5 +1,6 @@
 --!strict
 
+local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
@@ -28,7 +29,29 @@ local function applyExplosionImpulse(
 	end
 end
 
-local function explodeAtPosition(fromPlayer: Player?, position: Vector3, blastRadius: number, impulse: Vector3 | number)
+local map = game.Workspace:FindFirstChild("map")
+game.Workspace.ChildAdded:Connect(function(child)
+	if child.Name == "map" then
+		map = child
+	end
+end)
+game.Workspace.ChildRemoved:Connect(function(child)
+	if child == map then
+		map = nil
+	end
+end)
+
+local function isMapPart(part: BasePart)
+	return map and part:IsDescendantOf(map)
+end
+
+local function explodeAtPosition(
+	fromPlayer: Player?,
+	position: Vector3,
+	blastRadius: number,
+	destroyJointPercent: number,
+	impulse: Vector3 | number
+)
 	local explosion = Instance.new("Explosion")
 	explosion.Position = position
 	explosion.BlastRadius = blastRadius
@@ -55,9 +78,7 @@ local function explodeAtPosition(fromPlayer: Player?, position: Vector3, blastRa
 			continue
 		end
 
-		local D = 5
-		local strength = D / math.max(dist, D)
-
+		local strength = 1 - math.pow(math.clamp(dist / blastRadius, 0, 1), 3)
 		if humanoid.Health <= 0 then
 			for _, v in char:GetChildren() do
 				if not v:IsA("BasePart") then
@@ -80,12 +101,15 @@ local function explodeAtPosition(fromPlayer: Player?, position: Vector3, blastRa
 			return
 		end
 
-		local D = 4
-		local strength = D / math.max(dist, D)
+		if not isMapPart(part) then
+			return
+		end
+
+		local strength = 1 - math.pow(math.clamp(dist / blastRadius, 0, 1), 3)
 		local joints = part:GetJoints()
 		if #joints > 0 then
 			for _, v in joints do
-				if math.random() > 0.8 * strength then
+				if math.random() > destroyJointPercent * strength then
 					continue
 				end
 
@@ -107,7 +131,7 @@ if RunService:IsStudio() then
 	function ExplosionsInterface.onExplodeAtPosition(player: Player, position: Vector3)
 		assert(t.Vector3(position))
 
-		explodeAtPosition(player, position, 15, 500)
+		explodeAtPosition(player, position, 15, 1, 500)
 	end
 end
 
@@ -137,7 +161,7 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 	local function explode(position: Vector3)
 		heartbeatConnection:Disconnect()
 		rocket:Destroy()
-		explodeAtPosition(player, position, 15, dir * 1500)
+		explodeAtPosition(player, position, 15, 0.8, dir * 1500)
 	end
 
 	heartbeatConnection = RunService.Heartbeat:Connect(function(dt)
@@ -193,5 +217,38 @@ function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, 
 	propelRocket(rocket, player.Team, player)
 	rocket.Parent = game.Workspace
 end
+
+local function onBombAdded(bomb: Model)
+	local prim = bomb.PrimaryPart
+	if not prim then
+		return
+	end
+
+	local originalColor = prim.Color
+	local originalMaterial = prim.Material
+
+	local delay = 1
+	for i = 1, 10 do
+		task.wait(delay)
+		delay *= 0.8
+		if not bomb:IsDescendantOf(game.Workspace) then
+			return
+		end
+
+		if prim.Color == originalColor then
+			prim.Color = Color3.new(1, 0, 0)
+			prim.Material = Enum.Material.Neon
+		else
+			prim.Color = originalColor
+			prim.Material = originalMaterial
+		end
+	end
+
+	local userId = bomb:GetAttribute("fromUserId") :: number?
+	explodeAtPosition(userId and Players:GetPlayerByUserId(userId), prim.Position, 35, 0.95, 800)
+	bomb:Destroy()
+end
+
+CollectionService:GetInstanceAddedSignal("bomb"):Connect(onBombAdded)
 
 return ExplosionsInterface

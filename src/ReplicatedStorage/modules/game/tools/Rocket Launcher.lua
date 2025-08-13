@@ -10,12 +10,12 @@ return function(tool: Tool)
 	local canShootAtTime = 0
 	local cooldown = 1
 
-	local function onMouseClick(input: InputObject)
+	local function onActionInputAtScreenPosition(screenPosition: Vector2)
 		if time() < canShootAtTime then
 			return
 		end
 
-		local ray = camera:ScreenPointToRay(input.Position.X, input.Position.Y, 0.1)
+		local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y, 0.1)
 		local L = 400
 		local res = game.Workspace:Raycast(ray.Origin, ray.Direction * L)
 		local pos = if res then res.Position else ray.Origin + ray.Direction * L
@@ -31,8 +31,20 @@ return function(tool: Tool)
 				end
 
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					onMouseClick(input)
+					onActionInputAtScreenPosition(Vector2.new(input.Position.X, input.Position.Y))
 				end
+			end),
+
+			UserInputService.TouchTap:Connect(function(positions, gameProcessed)
+				if gameProcessed then
+					return
+				end
+
+				if #positions ~= 1 then
+					return
+				end
+
+				onActionInputAtScreenPosition(positions[1])
 			end),
 		}
 

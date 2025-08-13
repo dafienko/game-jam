@@ -11,6 +11,7 @@ local INTERMISSION_SECONDS = 5
 
 local maps = ServerStorage.Maps
 local Lobby = game.Workspace.Lobby
+local loadingGui = Lobby.LoadingGui
 local joinDoorTemplate = Lobby.joinDoorTemplate
 joinDoorTemplate.Parent = nil
 
@@ -27,6 +28,7 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 		end
 	end
 
+	model.Name = "map"
 	model.Parent = game.Workspace
 
 	local teams = {}
@@ -66,6 +68,8 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 			v:Destroy()
 		end
 		for _, v in Players:GetPlayers() do
+			v.Team = Teams.Neutral
+
 			local char = v.Character
 			if not char then
 				continue
@@ -90,9 +94,11 @@ local function countdown(seconds: number)
 end
 
 while true do
+	loadingGui.Enabled = false
 	local cleanup = startNewGame(maps.Map1)
 	countdown(GAME_DURATION_SECONDS)
 	cleanup()
+	loadingGui.Enabled = true
 	countdown(INTERMISSION_SECONDS)
 end
 

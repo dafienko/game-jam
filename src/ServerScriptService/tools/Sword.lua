@@ -18,8 +18,7 @@ slashAnimation.AnimationId = SLASH_ANIMATION
 local lungeAnimation = Instance.new("Animation")
 lungeAnimation.AnimationId = LUNGE_ANIMATION
 
-return function(tool: Tool)
-	local model = tool:FindFirstChild("Model") :: Model?
+return function(tool: Tool, model: Model)
 	local prim = model and model.PrimaryPart
 	local lungeSound = prim and prim:FindFirstChild("lunge") :: Sound?
 	local slashSound = prim and prim:FindFirstChild("slash") :: Sound?

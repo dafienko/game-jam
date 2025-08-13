@@ -28,5 +28,5 @@ model.Parent = tool
 
 local module = ServerScriptService.tools:FindFirstChild(toolName)
 if module then
-	require(module)(tool)
+	require(module)(tool, model)
 end

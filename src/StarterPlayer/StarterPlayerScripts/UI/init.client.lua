@@ -23,6 +23,7 @@ end
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "UI"
 screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
 screenGui.Parent = PlayerGui
 
 ReactRoblox.createRoot(screenGui):render(React.createElement(mainUiComponent))
