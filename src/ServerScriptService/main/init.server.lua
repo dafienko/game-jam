@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local ExplosionsInterface = require(script.Remotes.ExplosionsInterface)
+local BuildInterface = require(script.Remotes.BuildInterface)
 local PlayerData = require(script.PlayerData)
 
 local remotes = ReplicatedStorage.remotes
@@ -17,6 +18,7 @@ if RunService:IsStudio() then
 	remotes.explodeAtPosition.OnServerEvent:Connect(ExplosionsInterface.onExplodeAtPosition)
 end
 remotes.shootRocketAtPosition.OnServerEvent:Connect(ExplosionsInterface.onShootRocketAtPosition)
+remotes.build.OnServerInvoke = BuildInterface.onBuild
 
 local function createTool(name: string): Tool
 	local tool = toolTemplate:Clone()
@@ -89,6 +91,7 @@ local function onPlayerAdded(player: Player)
 		createTool("Rocket Launcher").Parent = backpack
 		createTool("Sword").Parent = backpack
 		createTool("Bomb").Parent = backpack
+		createTool("Build").Parent = backpack
 	end
 
 	if player.Backpack then

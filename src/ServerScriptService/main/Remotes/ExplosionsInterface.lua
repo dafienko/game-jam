@@ -62,7 +62,13 @@ local function explodeAtPosition(
 	Util.playSoundAtPosition("rbxassetid://262562442", 30, 600, 1.1, position)
 
 	for _, v in Players:GetPlayers() do
-		if fromPlayer and not Util.canTeamAttackTeam(fromPlayer.Team, v.Team) then
+		if v == fromPlayer then
+			continue
+		end
+
+		print(v)
+		if not Util.canTeamAttackTeam(fromPlayer and fromPlayer.Team, v.Team) then
+			print("skip1")
 			continue
 		end
 
@@ -70,15 +76,18 @@ local function explodeAtPosition(
 		local humanoid = char and char:FindFirstChild("Humanoid") :: Humanoid?
 		local hrp = char and char.PrimaryPart
 		if not (humanoid and hrp) then
+			print("skip2")
 			continue
 		end
 
 		local dist = (hrp.Position - position).Magnitude
 		if dist > blastRadius then
+			print("skip3")
 			continue
 		end
 
 		local strength = 1 - math.pow(math.clamp(dist / blastRadius, 0, 1), 3)
+		Util.playerDamageCharacter(fromPlayer, char, strength * destroyJointPercent * 200)
 		if humanoid.Health <= 0 then
 			for _, v in char:GetChildren() do
 				if not v:IsA("BasePart") then

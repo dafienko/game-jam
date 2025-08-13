@@ -19,7 +19,7 @@ function Util.getPlayerAndCharacterFromInstance(instance: Instance): (Player?, M
 	return Util.getPlayerAndCharacterFromInstance(potentialCharacter)
 end
 
-function Util.playerDamageCharacter(player: Player, character: Model, amount: number)
+function Util.playerDamageCharacter(player: Player?, character: Model, amount: number)
 	local humanoid = character:FindFirstChild("Humanoid") :: Humanoid?
 	if not humanoid then
 		return
@@ -29,8 +29,10 @@ function Util.playerDamageCharacter(player: Player, character: Model, amount: nu
 		return
 	end
 
-	character:SetAttribute("lastTaggedBy", player.UserId)
-	character:SetAttribute("taggedAtTime", time())
+	if player then
+		character:SetAttribute("lastTaggedBy", player.UserId)
+		character:SetAttribute("taggedAtTime", time())
+	end
 	humanoid:TakeDamage(amount)
 end
 
