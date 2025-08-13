@@ -45,8 +45,16 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 		local dir = (i % 2) * 2 - 1
 		local offset = i // 2
 		door:PivotTo(door:GetPivot() * CFrame.new(30 * offset * dir, 0, 0), 0, 0)
-		table.insert(teamDoors, TeamDoor.new(door, team, spawnLocations))
+		local teamDoor = TeamDoor.new(door, team, spawnLocations)
+		table.insert(teamDoors, teamDoor)
 		door.Parent = Lobby
+
+		team.PlayerAdded:Connect(function()
+			teamDoor:UpdateStatus()
+		end)
+		team.PlayerRemoved:Connect(function()
+			teamDoor:UpdateStatus()
+		end)
 	end
 
 	return function()
