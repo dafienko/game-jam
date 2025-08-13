@@ -1,6 +1,7 @@
 --!strict
 
 local Players = game:GetService("Players")
+local Debris = game:GetService("Debris")
 
 local Util = {}
 
@@ -39,6 +40,40 @@ function Util.canTeamAttackTeam(attackingTeam: Team?, team: Team?): boolean
 	end
 
 	return attackingTeam ~= team
+end
+
+local soundParts = Instance.new("Folder")
+soundParts.Name = "soundParts"
+soundParts.Parent = game.Workspace
+
+function Util.playSoundAtPosition(
+	soundId: string,
+	rolloffMinDistance: number,
+	rolloffMaxDistance: number,
+	volume: number,
+	position: Vector3
+)
+	local soundPart = Instance.new("Part")
+	soundPart.CanCollide = false
+	soundPart.CanQuery = false
+	soundPart.CanTouch = false
+	soundPart.Anchored = true
+	soundPart.CastShadow = false
+	soundPart.Transparency = 1
+	soundPart.CFrame = CFrame.new(position)
+
+	local sound = Instance.new("Sound")
+	sound.SoundId = soundId
+	sound.RollOffMinDistance = rolloffMinDistance
+	sound.RollOffMaxDistance = rolloffMaxDistance
+	sound.Volume = volume
+	sound.Parent = soundPart
+	soundPart.Parent = soundParts
+	if not sound.IsLoaded then
+		sound.Loaded:Wait()
+	end
+	sound:Play()
+	Debris:AddItem(soundPart, sound.TimeLength + 1)
 end
 
 return Util

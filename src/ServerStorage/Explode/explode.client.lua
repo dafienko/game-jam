@@ -14,5 +14,5 @@ tool.Activated:Connect(function()
 		hitpos = result.Position
 	end
 
-	ReplicatedStorage.remotes.explodeAt:FireServer(hitpos)
+	ReplicatedStorage.remotes.explodeAtPosition:FireServer(hitpos)
 end)

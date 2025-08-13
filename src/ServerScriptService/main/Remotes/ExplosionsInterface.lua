@@ -36,9 +36,11 @@ local function explodeAtPosition(fromPlayer: Player?, position: Vector3, blastRa
 	explosion.BlastPressure = 0
 	explosion.DestroyJointRadiusPercent = 0
 
+	Util.playSoundAtPosition("rbxassetid://262562442", 30, 600, 1.1, position)
+
 	for _, v in Players:GetPlayers() do
 		if fromPlayer and not Util.canTeamAttackTeam(fromPlayer.Team, v.Team) then
-			return
+			continue
 		end
 
 		local char = v.Character
@@ -132,9 +134,10 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 	local distanceTraveled = 0
 	local dir = rocket:GetPivot().LookVector
 	local heartbeatConnection
-	local function cleanup()
+	local function explode(position: Vector3)
 		heartbeatConnection:Disconnect()
 		rocket:Destroy()
+		explodeAtPosition(player, position, 15, dir * 1500)
 	end
 
 	heartbeatConnection = RunService.Heartbeat:Connect(function(dt)
@@ -144,15 +147,13 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 		local pivot = rocket:GetPivot()
 		local newCF = pivot + dir * dist
 		if distanceTraveled > rocketMaxDistance then
-			explodeAtPosition(player, newCF.Position, 15, dir * 1500)
-			cleanup()
+			explode(newCF.Position)
 			return
 		end
 
 		local res = game.Workspace:Raycast(pivot.Position, dir * dist, params)
 		if res then
-			explodeAtPosition(player, res.Position, 15, dir * 1500)
-			cleanup()
+			explode(res.Position)
 			return
 		end
 
@@ -173,8 +174,11 @@ function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, 
 	player:SetAttribute("nextRocketTime", time() + 1)
 
 	local rpgModel = rpg:FindFirstChild("Model")
-	local mainPart = rpgModel and rpgModel:FindFirstChild("main")
-	local muzzleAttachment = mainPart and mainPart:FindFirstChild("muzzle") :: Attachment?
+	local mainPart = rpgModel and rpgModel:FindFirstChild("main") :: any
+	if mainPart then
+		mainPart.shootSound:Play()
+	end
+	local muzzleAttachment = mainPart and mainPart.muzzle
 	local shootFrom = if muzzleAttachment then muzzleAttachment.WorldCFrame else rpg:GetPivot()
 	local rocket = rocketTemplate:Clone()
 	for _, v in rocket:GetDescendants() do
@@ -184,6 +188,7 @@ function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, 
 			v.Color = ColorSequence.new(player.TeamColor.Color)
 		end
 	end
+	rocket.PrimaryPart.flyingSound:Play()
 	rocket:PivotTo(CFrame.new(shootFrom.Position, targetPosition))
 	propelRocket(rocket, player.Team, player)
 	rocket.Parent = game.Workspace
