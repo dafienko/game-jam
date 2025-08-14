@@ -69,7 +69,7 @@ function BuildInterface.onBuild(player: Player, structureName: string, cf: CFram
 	if structureName == "Wall" then
 		blueprint = GameUtil.generateWallBlueprint(6, 4)
 	elseif structureName == "Bridge" then
-		blueprint = GameUtil.generateBridgeBlueprint(3, 8)
+		blueprint = GameUtil.generateBridgeBlueprint(3, 10)
 	else
 		assert(false, `Invalid structure name {structureName}`)
 	end
@@ -77,14 +77,6 @@ function BuildInterface.onBuild(player: Player, structureName: string, cf: CFram
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = { map }
 	params.FilterType = Enum.RaycastFilterType.Include
-
-	local p = Instance.new("Part")
-	p.CFrame = cf
-	p.Anchored = true
-	p.Size = Vector3.one * 0.5
-	p.CanCollide = false
-	p.CanQuery = false
-	p.Parent = game.Workspace
 
 	local res = game.Workspace:Raycast(cf.Position + Vector3.new(0, 4, 0), Vector3.new(0, -8, 0), params)
 	if not (res and res.Instance and res.Instance:IsA("BasePart")) then

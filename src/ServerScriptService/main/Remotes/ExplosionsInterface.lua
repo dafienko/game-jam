@@ -66,9 +66,7 @@ local function explodeAtPosition(
 			continue
 		end
 
-		print(v)
 		if not Util.canTeamAttackTeam(fromPlayer and fromPlayer.Team, v.Team) then
-			print("skip1")
 			continue
 		end
 
@@ -76,13 +74,11 @@ local function explodeAtPosition(
 		local humanoid = char and char:FindFirstChild("Humanoid") :: Humanoid?
 		local hrp = char and char.PrimaryPart
 		if not (humanoid and hrp) then
-			print("skip2")
 			continue
 		end
 
 		local dist = (hrp.Position - position).Magnitude
 		if dist > blastRadius then
-			print("skip3")
 			continue
 		end
 

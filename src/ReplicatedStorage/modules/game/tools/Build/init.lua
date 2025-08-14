@@ -87,7 +87,7 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 		end
 		local blueprint = if currentStructure == "Wall"
 			then GameUtil.generateWallBlueprint(6, 4)
-			else GameUtil.generateBridgeBlueprint(3, 8)
+			else GameUtil.generateBridgeBlueprint(3, 10)
 		currentPreviewModel = renderBlueprint(blueprint)
 		currentPreviewModel.Parent = game.Workspace
 		updatePreviewPlacement()
