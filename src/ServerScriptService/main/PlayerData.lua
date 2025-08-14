@@ -1,15 +1,18 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local Players = game:GetService("Players")
 
 local ProfileStore = require(ReplicatedStorage.modules.dependencies.ProfileStore)
 local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
+local Leaderboards = require(ServerScriptService.main.Leaderboards)
 
 local PROFILE_TEMPLATE = {
-	Studs = 0,
+	Damage = 0,
 	KOs = 0,
 	Wins = 0,
+	Points = 0,
 }
 type ProfileData = typeof(PROFILE_TEMPLATE)
 
@@ -17,20 +20,24 @@ local PlayerStore = ProfileStore.New("PlayerStore", PROFILE_TEMPLATE)
 
 type Profile = typeof(PlayerStore:StartSessionAsync(nil :: any, nil :: any))
 local Profiles: { [Player]: Profile } = {}
-local dataSignals: { [Player]: {
-	Studs: Signal.Signal<number>,
-	KOs: Signal.Signal<number>,
-	Wins: Signal.Signal<number>,
-} } =
+local dataSignals: {
+	[Player]: {
+		Damage: Signal.Signal<number>,
+		KOs: Signal.Signal<number>,
+		Wins: Signal.Signal<number>,
+		Points: Signal.Signal<number>,
+	},
+} =
 	{}
 
 local PlayerData = {}
 
 function PlayerData.loadPlayerData(player: Player): ProfileData?
 	dataSignals[player] = {
-		Studs = Signal.new(),
+		Damage = Signal.new(),
 		KOs = Signal.new(),
 		Wins = Signal.new(),
+		Points = Signal.new(),
 	}
 
 	local profile = PlayerStore:StartSessionAsync(`{player.UserId}`, {
@@ -43,6 +50,14 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 		player:Kick(`Profile load fail - Please rejoin`)
 		return
 	end
+
+	profile.OnAfterSave:Connect(function(lastSavedData)
+		Leaderboards.updatePlayerStanding(player, {
+			wins = lastSavedData.Wins,
+			damage = lastSavedData.Damage,
+			KOs = lastSavedData.KOs,
+		})
+	end)
 
 	profile:AddUserId(player.UserId)
 	profile:Reconcile()
@@ -64,8 +79,10 @@ end
 function PlayerData.unloadPlayerData(player: Player)
 	local signals = dataSignals[player]
 	if signals then
-		signals.Studs:Destroy()
+		signals.Damage:Destroy()
 		signals.KOs:Destroy()
+		signals.Wins:Destroy()
+		signals.Points:Destroy()
 	end
 
 	local profile = Profiles[player]
@@ -83,16 +100,17 @@ function PlayerData.getPlayerData(player: Player): ProfileData?
 	return table.clone(profile.Data)
 end
 
-function PlayerData.updateStuds(player: Player, delta: number)
+function PlayerData.addDamage(player: Player, delta: number)
+	assert(delta > 0)
+
 	local profile = Profiles[player]
 	local signals = dataSignals[player]
 	if not (profile and signals) then
 		return
 	end
 
-	assert(profile.Data.Studs + delta > 0)
-	profile.Data.Studs += delta
-	signals.Studs:Fire(profile.Data.Studs)
+	profile.Data.Damage += delta
+	signals.Damage:Fire(profile.Data.Damage)
 end
 
 function PlayerData.addKO(player: Player)
@@ -117,13 +135,13 @@ function PlayerData.addWin(player: Player)
 	signals.Wins:Fire(profile.Data.Wins)
 end
 
-function PlayerData.onStudsChanged(player: Player, callback: (number) -> ())
+function PlayerData.onDamageChanged(player: Player, callback: (number) -> ())
 	local signals = dataSignals[player]
 	if not signals then
 		return
 	end
 
-	signals.Studs:Connect(callback)
+	signals.Damage:Connect(callback)
 end
 
 function PlayerData.onKOsChanged(player: Player, callback: (number) -> ())

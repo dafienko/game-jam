@@ -181,6 +181,7 @@ return function(tool: Tool)
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	local hrp = char and char.PrimaryPart
 	if not (hrp and humanoid and humanoid.Health > 0) then
+		warn("invalid character")
 		return
 	end
 

@@ -120,7 +120,7 @@ local function explodeAtPosition(
 
 				v:Destroy()
 				if fromPlayer then
-					PlayerData.updateStuds(fromPlayer, 1)
+					PlayerData.addDamage(fromPlayer, 1)
 				end
 			end
 		end

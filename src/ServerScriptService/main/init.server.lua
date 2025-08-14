@@ -78,20 +78,20 @@ local function onPlayerAdded(player: Player)
 		kosValue.Value = kos
 	end)
 
-	local studsValue = Instance.new("IntValue")
-	studsValue.Value = playerData.Studs
-	studsValue.Name = "Points"
-	studsValue.Parent = leaderstats
-	PlayerData.onStudsChanged(player, function(studs)
-		studsValue.Value = studs
+	local damageValue = Instance.new("IntValue")
+	damageValue.Value = playerData.Damage
+	damageValue.Name = "Damage"
+	damageValue.Parent = leaderstats
+	PlayerData.onDamageChanged(player, function(damage)
+		damageValue.Value = damage
 	end)
 
 	local winsValue = Instance.new("IntValue")
 	winsValue.Value = playerData.Wins
 	winsValue.Name = "Wins"
 	winsValue.Parent = leaderstats
-	PlayerData.onWinsChanged(player, function(studs)
-		winsValue.Value = studs
+	PlayerData.onWinsChanged(player, function(wins)
+		winsValue.Value = wins
 	end)
 
 	leaderstats.Parent = player

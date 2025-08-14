@@ -26,7 +26,7 @@ return function(tool: Tool, model: Model)
 			dropBomb(model:GetPivot() * CFrame.new(0, 0, -3), player)
 		end
 
-		task.wait(6)
+		task.wait(3.5)
 		model.Parent = tool
 		tool.Enabled = true
 	end)
