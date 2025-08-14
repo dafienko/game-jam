@@ -5,17 +5,9 @@ local Players = game:GetService("Players")
 
 local Cryo = require(ReplicatedStorage.modules.dependencies.Cryo)
 local React = require(ReplicatedStorage.modules.dependencies.React)
+local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
 
 local LeaderboardRowComponent = require(script.Parent.LeaderboardRowComponent)
-
-function commaNumber(amount: number): string
-	local formatted = tostring(amount)
-	repeat
-		local k
-		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
-	until k == 0
-	return formatted
-end
 
 type RowData = {
 	userId: number,
@@ -77,7 +69,7 @@ return function(props: Props)
 					name = row.userName,
 					displayName = row.displayName,
 					thumbnail = thumbnails[row.userId],
-					valueString = commaNumber(row.value),
+					valueString = GameUtil.commaNumber(row.value),
 				}),
 			}),
 				tostring(index)

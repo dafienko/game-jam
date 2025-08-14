@@ -11,6 +11,11 @@ local Leaderboards = require(ServerScriptService.main.Leaderboards)
 local Levels = require(ReplicatedStorage.modules.game.Levels)
 
 local updateClientLevelsRemote = ReplicatedStorage.remotes.updateClientLevels
+local updateClientPointsRemote = ReplicatedStorage.remotes.updateClientPoints
+
+local POINTS_PER_DAMAGE = 1
+local POINTS_PER_KO = 50
+local POINTS_PER_WIN = 500
 
 local function getInitialLevels(): { [string]: number }
 	return Cryo.Dictionary.map(Levels.LEVELS, function(level, statId)
@@ -85,7 +90,8 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 		return
 	end
 
-	ReplicatedStorage.remotes.updateClientLevels:FireClient(player, profile.Data.Levels)
+	updateClientLevelsRemote:FireClient(player, profile.Data.Levels)
+	updateClientPointsRemote:FireClient(player, profile.Data.Points)
 
 	Profiles[player] = profile
 	return profile.Data
@@ -127,6 +133,7 @@ function PlayerData.addDamage(player: Player, delta: number)
 
 	profile.Data.Damage += delta
 	signals.Damage:Fire(profile.Data.Damage)
+	PlayerData._addPoints(player, delta * POINTS_PER_DAMAGE)
 end
 
 function PlayerData.addKO(player: Player)
@@ -138,6 +145,7 @@ function PlayerData.addKO(player: Player)
 
 	profile.Data.KOs += 1
 	signals.KOs:Fire(profile.Data.KOs)
+	PlayerData._addPoints(player, POINTS_PER_KO)
 end
 
 function PlayerData.addWin(player: Player)
@@ -149,6 +157,53 @@ function PlayerData.addWin(player: Player)
 
 	profile.Data.Wins += 1
 	signals.Wins:Fire(profile.Data.Wins)
+	PlayerData._addPoints(player, POINTS_PER_WIN)
+end
+
+local function queuePointsUpdate(player: Player)
+	if player:GetAttribute("updatePoints") then
+		return
+	end
+	player:SetAttribute("updatePoints", true)
+
+	task.defer(function()
+		if player.Parent ~= Players then
+			return
+		end
+
+		local profile = Profiles[player]
+		if not profile then
+			return
+		end
+
+		player:SetAttribute("updatePoints", false)
+		updateClientPointsRemote:FireClient(player, profile.Data.Points)
+	end)
+end
+
+function PlayerData._addPoints(player: Player, amount: number)
+	assert(amount > 0)
+	local profile = Profiles[player]
+	local signals = dataSignals[player]
+	if not (profile and signals) then
+		return
+	end
+
+	profile.Data.Points += amount
+	queuePointsUpdate(player)
+end
+
+function PlayerData.deductPoints(player: Player, amount: number)
+	assert(amount > 0)
+	local profile = Profiles[player]
+	local signals = dataSignals[player]
+	if not (profile and signals) then
+		return
+	end
+
+	assert(profile.Data.Points >= amount)
+	profile.Data.Points -= amount
+	queuePointsUpdate(player)
 end
 
 function PlayerData.onDamageChanged(player: Player, callback: (number) -> ()): Signal.Connection?
@@ -196,6 +251,15 @@ function PlayerData.getStatLevel(player: Player, statId: number): number?
 	return profile.Data.Levels[tostring(statId)]
 end
 
+function PlayerData.getPoints(player: Player): number?
+	local profile = Profiles[player]
+	if not profile then
+		return
+	end
+
+	return profile.Data.Points
+end
+
 function PlayerData.upgradeStat(player: Player, statId: number)
 	local profile = Profiles[player]
 	local signals = dataSignals[player]
@@ -211,7 +275,7 @@ function PlayerData.upgradeStat(player: Player, statId: number)
 	signals.Levels:Fire(statId)
 end
 
-function PlayerData.getStat(player: Player?, statId: number): Levels.Stat
+function PlayerData.getStat(player: Player?, statId: number): Levels.StatLevel
 	local myLevel = player and PlayerData.getStatLevel(player, statId)
 	return Levels.LEVELS[statId][myLevel or 1]
 end
@@ -223,6 +287,15 @@ updateClientLevelsRemote.OnServerEvent:Connect(function(player: Player)
 	end
 
 	updateClientLevelsRemote:FireClient(player, profile.Data.Levels)
+end)
+
+updateClientPointsRemote.OnServerEvent:Connect(function(player: Player)
+	local profile = Profiles[player]
+	if not profile then
+		return
+	end
+
+	updateClientPointsRemote:FireClient(player, profile.Data.Points)
 end)
 
 return PlayerData

@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local Levels = require(ReplicatedStorage.modules.game.Levels)
 
 local ExplosionsInterface = require(script.Remotes.ExplosionsInterface)
+local StatsInterface = require(script.Remotes.StatsInterface)
 local BuildInterface = require(script.Remotes.BuildInterface)
 local PlayerData = require(script.PlayerData)
 
@@ -23,6 +24,7 @@ else
 end
 remotes.shootRocketAtPosition.OnServerInvoke = ExplosionsInterface.onShootRocketAtPosition
 remotes.build.OnServerInvoke = BuildInterface.onBuild
+remotes.upgradeStat.OnServerInvoke = StatsInterface.onUpgradeStat
 
 local function createTool(name: string): Tool
 	local tool = toolTemplate:Clone()

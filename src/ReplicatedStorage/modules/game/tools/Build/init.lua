@@ -174,16 +174,12 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 				setText(currentStructure)
 			end
 		end),
+		ClientData.LevelChanged:Connect(function(statId)
+			if RELEVANT_BUILD_STATS[statId] then
+				updatePreviewModel()
+			end
+		end),
 	}
-
-	local clientDataConnection = ClientData.LevelChanged:Connect(function(statId)
-		if RELEVANT_BUILD_STATS[statId] then
-			updatePreviewModel()
-		end
-	end)
-	if clientDataConnection then
-		table.insert(connections, clientDataConnection)
-	end
 
 	local didBindAction = false
 	if UserInputService.TouchEnabled then

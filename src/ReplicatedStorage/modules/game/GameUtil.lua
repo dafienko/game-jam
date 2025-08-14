@@ -105,4 +105,13 @@ function GameUtil.isPlayerAlive(player: Player)
 	return hrp and humanoid and humanoid.Health > 0
 end
 
+function GameUtil.commaNumber(amount: number): string
+	local formatted = tostring(amount)
+	repeat
+		local k
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+	until k == 0
+	return formatted
+end
+
 return GameUtil

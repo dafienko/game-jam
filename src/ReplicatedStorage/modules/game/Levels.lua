@@ -1,10 +1,10 @@
 --!strict
 
-local DEFAULT_COST_1 = 200
-local DEFAULT_COST_2 = 500
-local DEFAULT_COST_3 = 1000
-local DEFAULT_COST_4 = 5000
-local DEFAULT_COST_5 = 10000
+local DEFAULT_COST_1 = 0
+local DEFAULT_COST_2 = 200
+local DEFAULT_COST_3 = 500
+local DEFAULT_COST_4 = 2000
+local DEFAULT_COST_5 = 50000
 
 local STAT_IDs = {
 	RocketLauncher_Cooldown = 1,
@@ -25,12 +25,14 @@ local STAT_IDs = {
 	Character_JumpHeight = 13,
 }
 
-export type Stat = {
+export type StatLevel = {
 	value: number,
 	cost: number,
 }
 
-local LEVELS: { [number]: { Stat } } = {
+export type Stat = { StatLevel }
+
+local LEVELS: { [number]: Stat } = {
 	[STAT_IDs.RocketLauncher_Cooldown] = {
 		{
 			value = 1.2,
@@ -55,7 +57,7 @@ local LEVELS: { [number]: { Stat } } = {
 	},
 	[STAT_IDs.RocketLauncher_Size] = {
 		{
-			value = 13,
+			value = 11,
 			cost = DEFAULT_COST_1,
 		},
 		{
@@ -326,6 +328,6 @@ setmetatable(LEVELS, {
 })
 
 return {
-	LEVELS = (LEVELS :: any) :: { [number]: { Stat } },
+	LEVELS = (LEVELS :: any) :: { [number]: { StatLevel } },
 	STAT_IDs = STAT_IDs,
 }
