@@ -25,7 +25,7 @@ function GameUtil.generateWallBlueprint(width: number, height: number): Blueprin
 	for i = 0, height - 1 do
 		local row = {}
 		local parity = i % 2
-		local nBricks = width - parity - 1
+		local nBricks = width - parity
 		local rowWidth = nBricks * WALL_PART_SIZE.X + (nBricks - 1) * WALL_GAP
 		local rowStart = CFrame.new((WALL_PART_SIZE.X - rowWidth) / 2, WALL_PART_SIZE.Y * (i + 0.5), 0)
 		for j = 1, nBricks do

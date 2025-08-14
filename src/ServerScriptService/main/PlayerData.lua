@@ -4,19 +4,30 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Players = game:GetService("Players")
 
+local Cryo = require(ReplicatedStorage.modules.dependencies.Cryo)
 local ProfileStore = require(ReplicatedStorage.modules.dependencies.ProfileStore)
 local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
 local Leaderboards = require(ServerScriptService.main.Leaderboards)
+local Levels = require(ReplicatedStorage.modules.game.Levels)
 
-local PROFILE_TEMPLATE = {
+local updateClientLevelsRemote = ReplicatedStorage.remotes.updateClientLevels
+
+local function getInitialLevels(): { [string]: number }
+	return Cryo.Dictionary.map(Levels.LEVELS, function(level, statId)
+		return 1, tostring(statId)
+	end)
+end
+
+local profileTemplate = {
 	Damage = 0,
 	KOs = 0,
 	Wins = 0,
 	Points = 0,
+	Levels = getInitialLevels(),
 }
-type ProfileData = typeof(PROFILE_TEMPLATE)
+type ProfileData = typeof(profileTemplate)
 
-local PlayerStore = ProfileStore.New("PlayerStore", PROFILE_TEMPLATE)
+local PlayerStore = ProfileStore.New("PlayerStore", profileTemplate)
 
 type Profile = typeof(PlayerStore:StartSessionAsync(nil :: any, nil :: any))
 local Profiles: { [Player]: Profile } = {}
@@ -26,6 +37,7 @@ local dataSignals: {
 		KOs: Signal.Signal<number>,
 		Wins: Signal.Signal<number>,
 		Points: Signal.Signal<number>,
+		Levels: Signal.Signal<number>,
 	},
 } =
 	{}
@@ -38,6 +50,7 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 		KOs = Signal.new(),
 		Wins = Signal.new(),
 		Points = Signal.new(),
+		Levels = Signal.new(),
 	}
 
 	local profile = PlayerStore:StartSessionAsync(`{player.UserId}`, {
@@ -51,6 +64,9 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 		return
 	end
 
+	profile:AddUserId(player.UserId)
+	profile:Reconcile()
+
 	profile.OnAfterSave:Connect(function(lastSavedData)
 		Leaderboards.updatePlayerStanding(player, {
 			wins = lastSavedData.Wins,
@@ -58,9 +74,6 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 			KOs = lastSavedData.KOs,
 		})
 	end)
-
-	profile:AddUserId(player.UserId)
-	profile:Reconcile()
 
 	profile.OnSessionEnd:Connect(function()
 		Profiles[player] = nil
@@ -71,6 +84,8 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 		profile:EndSession()
 		return
 	end
+
+	ReplicatedStorage.remotes.updateClientLevels:FireClient(player, profile.Data.Levels)
 
 	Profiles[player] = profile
 	return profile.Data
@@ -83,6 +98,7 @@ function PlayerData.unloadPlayerData(player: Player)
 		signals.KOs:Destroy()
 		signals.Wins:Destroy()
 		signals.Points:Destroy()
+		signals.Levels:Destroy()
 	end
 
 	local profile = Profiles[player]
@@ -135,31 +151,78 @@ function PlayerData.addWin(player: Player)
 	signals.Wins:Fire(profile.Data.Wins)
 end
 
-function PlayerData.onDamageChanged(player: Player, callback: (number) -> ())
+function PlayerData.onDamageChanged(player: Player, callback: (number) -> ()): Signal.Connection?
 	local signals = dataSignals[player]
 	if not signals then
 		return
 	end
 
-	signals.Damage:Connect(callback)
+	return signals.Damage:Connect(callback)
 end
 
-function PlayerData.onKOsChanged(player: Player, callback: (number) -> ())
+function PlayerData.onKOsChanged(player: Player, callback: (number) -> ()): Signal.Connection?
 	local signals = dataSignals[player]
 	if not signals then
 		return
 	end
 
-	signals.KOs:Connect(callback)
+	return signals.KOs:Connect(callback)
 end
 
-function PlayerData.onWinsChanged(player: Player, callback: (number) -> ())
+function PlayerData.onWinsChanged(player: Player, callback: (number) -> ()): Signal.Connection?
 	local signals = dataSignals[player]
 	if not signals then
 		return
 	end
 
-	signals.Wins:Connect(callback)
+	return signals.Wins:Connect(callback)
 end
+
+function PlayerData.onLevelsChanged(player: Player, callback: (number) -> ()): Signal.Connection?
+	local signals = dataSignals[player]
+	if not signals then
+		return
+	end
+
+	return signals.Levels:Connect(callback)
+end
+
+function PlayerData.getStatLevel(player: Player, statId: number): number?
+	local profile = Profiles[player]
+	if not profile then
+		return
+	end
+
+	return profile.Data.Levels[tostring(statId)]
+end
+
+function PlayerData.upgradeStat(player: Player, statId: number)
+	local profile = Profiles[player]
+	local signals = dataSignals[player]
+	if not (profile and signals) then
+		return
+	end
+
+	local maxLevel = #Levels.LEVELS[statId]
+	local strId = tostring(statId)
+	assert(profile.Data.Levels[strId] < maxLevel)
+	profile.Data.Levels[strId] += 1
+	updateClientLevelsRemote:FireClient(player, { [strId] = profile.Data.Levels[strId] })
+	signals.Levels:Fire(statId)
+end
+
+function PlayerData.getStat(player: Player?, statId: number): Levels.Stat
+	local myLevel = player and PlayerData.getStatLevel(player, statId)
+	return Levels.LEVELS[statId][myLevel or 1]
+end
+
+updateClientLevelsRemote.OnServerEvent:Connect(function(player: Player)
+	local profile = Profiles[player]
+	if not profile then
+		return
+	end
+
+	updateClientLevelsRemote:FireClient(player, profile.Data.Levels)
+end)
 
 return PlayerData

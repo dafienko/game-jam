@@ -11,7 +11,7 @@ local shootRocketAtPositionRemote = ReplicatedStorage.remotes.shootRocketAtPosit
 
 return function(tool: Tool)
 	local canShootAtTime = 0
-	local cooldown = 1
+	local debounce = false
 
 	local function onActionInputAtScreenPosition(screenPosition: Vector2)
 		if not GameUtil.isPlayerAlive(player) then
@@ -22,12 +22,20 @@ return function(tool: Tool)
 			return
 		end
 
+		if debounce then
+			return
+		end
+		debounce = true
+
 		local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y, 0.1)
 		local L = 400
 		local res = game.Workspace:Raycast(ray.Origin, ray.Direction * L)
 		local pos = if res then res.Position else ray.Origin + ray.Direction * L
-		canShootAtTime = time() + cooldown
-		shootRocketAtPositionRemote:FireServer(tool, pos)
+		local cooldown = shootRocketAtPositionRemote:InvokeServer(tool, pos)
+		if cooldown then
+			canShootAtTime = time() + cooldown
+		end
+		debounce = false
 	end
 
 	tool.Equipped:Connect(function()

@@ -141,7 +141,7 @@ function Leaderboard._render(self: Leaderboard, data: LeaderboardUiComponent.Dat
 			prim.Anchored = true
 			local offset = (podiumPart.Size.Y + prim.Size.Y) / 2 + humanoid.HipHeight * HUMANOID_SCALE
 			char:PivotTo(podiumPart.CFrame * CFrame.new(0, offset, 0))
-			char.Parent = game.Workspace
+			char.Parent = podiumPart
 
 			local track = animator:LoadAnimation(PODIUM_ANIMATIONS[i])
 			track.Looped = true

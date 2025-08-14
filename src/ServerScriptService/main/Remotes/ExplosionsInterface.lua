@@ -11,6 +11,7 @@ local t = require(ReplicatedStorage.modules.dependencies.t)
 
 local Util = require(ServerScriptService.Util)
 local PlayerData = require(ServerScriptService.main.PlayerData)
+local Levels = require(game.ReplicatedStorage.modules.game.Levels)
 
 local rocketTemplate = ReplicatedStorage.assets.rocket
 
@@ -59,7 +60,7 @@ local function explodeAtPosition(
 	explosion.BlastPressure = 0
 	explosion.DestroyJointRadiusPercent = 0
 
-	Util.playSoundAtPosition("rbxassetid://262562442", 30, 600, 1.1, position)
+	task.spawn(Util.playSoundAtPositionAsync, "rbxassetid://262562442", 30, 600, 1.1, position)
 
 	for _, v in Players:GetPlayers() do
 		if v == fromPlayer then
@@ -153,7 +154,10 @@ local rocketInitialSpeed = 40
 local rocketAcceleration = 50
 local rocketMaxDistance = 400
 local rocketMaxSpeed = 120
-local function propelRocket(rocket: Model, team: Team, player: Player)
+local function propelRocket(rocket: Model, player: Player)
+	local explosionSize = PlayerData.getStat(player, Levels.STAT_IDs.RocketLauncher_Size).value
+	local explosionPower = PlayerData.getStat(player, Levels.STAT_IDs.RocketLauncher_Power).value
+
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { player.Character :: any }
@@ -166,7 +170,7 @@ local function propelRocket(rocket: Model, team: Team, player: Player)
 	local function explode(position: Vector3)
 		heartbeatConnection:Disconnect()
 		rocket:Destroy()
-		explodeAtPosition(player, position, 15, 0.8, dir * 1500)
+		explodeAtPosition(player, position, explosionSize, explosionPower, dir * 2000 * explosionPower)
 	end
 
 	heartbeatConnection = RunService.Heartbeat:Connect(function(dt)
@@ -219,11 +223,17 @@ function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, 
 	end
 	rocket.PrimaryPart.flyingSound:Play()
 	rocket:PivotTo(CFrame.new(shootFrom.Position, targetPosition))
-	propelRocket(rocket, player.Team, player)
+	propelRocket(rocket, player)
 	rocket.Parent = game.Workspace
+	return PlayerData.getStat(player, Levels.STAT_IDs.RocketLauncher_Cooldown).value
 end
 
 local function onBombAdded(bomb: Model)
+	local userId = bomb:GetAttribute("fromUserId") :: number?
+	local fromPlayer = userId and Players:GetPlayerByUserId(userId)
+	local explosionSize = PlayerData.getStat(fromPlayer, Levels.STAT_IDs.Bomb_Size).value
+	local explosionPower = PlayerData.getStat(fromPlayer, Levels.STAT_IDs.Bomb_Power).value
+
 	local prim = bomb.PrimaryPart
 	if not prim then
 		return
@@ -249,8 +259,7 @@ local function onBombAdded(bomb: Model)
 		end
 	end
 
-	local userId = bomb:GetAttribute("fromUserId") :: number?
-	explodeAtPosition(userId and Players:GetPlayerByUserId(userId), prim.Position, 35, 0.95, 800)
+	explodeAtPosition(fromPlayer, prim.Position, explosionSize, explosionPower, 1000 * explosionPower)
 	bomb:Destroy()
 end
 

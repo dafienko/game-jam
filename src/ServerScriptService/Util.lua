@@ -48,7 +48,7 @@ local soundParts = Instance.new("Folder")
 soundParts.Name = "soundParts"
 soundParts.Parent = game.Workspace
 
-function Util.playSoundAtPosition(
+function Util.playSoundAtPositionAsync(
 	soundId: string,
 	rolloffMinDistance: number,
 	rolloffMaxDistance: number,

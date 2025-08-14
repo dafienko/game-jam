@@ -1,9 +1,12 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local t = require(ReplicatedStorage.modules.dependencies.t)
 local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
+local Levels = require(ReplicatedStorage.modules.game.Levels)
+local PlayerData = require(ServerScriptService.main.PlayerData)
 
 local BuildInterface = {}
 
@@ -67,9 +70,15 @@ function BuildInterface.onBuild(player: Player, structureName: string, cf: CFram
 
 	local blueprint
 	if structureName == "Wall" then
-		blueprint = GameUtil.generateWallBlueprint(6, 4)
+		blueprint = GameUtil.generateWallBlueprint(
+			PlayerData.getStat(player, Levels.STAT_IDs.Build_Wall_Width).value,
+			PlayerData.getStat(player, Levels.STAT_IDs.Build_Wall_Height).value
+		)
 	elseif structureName == "Bridge" then
-		blueprint = GameUtil.generateBridgeBlueprint(3, 10)
+		blueprint = GameUtil.generateBridgeBlueprint(
+			PlayerData.getStat(player, Levels.STAT_IDs.Build_Bridge_Width).value,
+			PlayerData.getStat(player, Levels.STAT_IDs.Build_Bridge_Length).value
+		)
 	else
 		assert(false, `Invalid structure name {structureName}`)
 	end
@@ -83,9 +92,10 @@ function BuildInterface.onBuild(player: Player, structureName: string, cf: CFram
 		return
 	end
 	task.spawn(constructBlueprint, player, res.Instance, cf - cf.Position + res.Position, blueprint)
-	player:SetAttribute("canBuildAtTime", time() + 12)
 
-	return true
+	local cooldown = PlayerData.getStat(player, Levels.STAT_IDs.Build_Cooldown).value
+	player:SetAttribute("canBuildAtTime", time() + cooldown)
+	return cooldown
 end
 
 return BuildInterface

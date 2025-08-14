@@ -6,12 +6,20 @@ local UserInputService = game:GetService("UserInputService")
 local player = game:GetService("Players").LocalPlayer
 local ContextActionService = game:GetService("ContextActionService")
 
+local ClientData = require(ReplicatedStorage.modules.game.ClientData)
 local React = require(ReplicatedStorage.modules.dependencies.React)
 local ReactRoblox = require(ReplicatedStorage.modules.dependencies.ReactRoblox)
 local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
+local Levels = require(ReplicatedStorage.modules.game.Levels)
 
 local BuildUiComponent = require(script.BuildUiComponent)
 
+local RELEVANT_BUILD_STATS = {
+	[Levels.STAT_IDs.Build_Wall_Width] = true,
+	[Levels.STAT_IDs.Build_Wall_Height] = true,
+	[Levels.STAT_IDs.Build_Bridge_Width] = true,
+	[Levels.STAT_IDs.Build_Bridge_Length] = true,
+}
 local BUILD_ACTION_NAME = "Build"
 local STRUCTURE_NAMES = {
 	"Wall",
@@ -66,7 +74,11 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 			return
 		end
 		local vec = Vector3.new(0, -8, 0)
-		local origin = humanoidRootPart.CFrame * CFrame.new(0, 0, -10)
+		local origin = humanoidRootPart.CFrame
+		if currentStructure == "Wall" then
+			origin *= CFrame.new(0, 0, -10)
+		end
+
 		local params = RaycastParams.new()
 		params.FilterDescendantsInstances = { game.Workspace:FindFirstChild("map") }
 		params.FilterType = Enum.RaycastFilterType.Include
@@ -81,25 +93,36 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 		)
 	end
 
-	local function onCurrentStructureChanged()
+	local function updatePreviewModel()
 		if currentPreviewModel then
 			currentPreviewModel:Destroy()
 		end
-		local blueprint = if currentStructure == "Wall"
-			then GameUtil.generateWallBlueprint(6, 4)
-			else GameUtil.generateBridgeBlueprint(3, 10)
+		local blueprint
+		if currentStructure == "Wall" then
+			blueprint = GameUtil.generateWallBlueprint(
+				ClientData.getStat(Levels.STAT_IDs.Build_Wall_Width).value,
+				ClientData.getStat(Levels.STAT_IDs.Build_Wall_Height).value
+			)
+		elseif currentStructure == "Bridge" then
+			blueprint = GameUtil.generateBridgeBlueprint(
+				ClientData.getStat(Levels.STAT_IDs.Build_Bridge_Width).value,
+				ClientData.getStat(Levels.STAT_IDs.Build_Bridge_Length).value
+			)
+		else
+			assert(false, `Invalid structure name {currentStructure}`)
+		end
 		currentPreviewModel = renderBlueprint(blueprint)
 		currentPreviewModel.Parent = game.Workspace
 		updatePreviewPlacement()
 	end
-	onCurrentStructureChanged()
+	updatePreviewModel()
 
 	local function cycleCurrentStructure(dir: number)
 		local i = table.find(STRUCTURE_NAMES, currentStructure)
 		assert(i)
 		i = (i + dir - 1) % #STRUCTURE_NAMES + 1
 		currentStructure = STRUCTURE_NAMES[i]
-		onCurrentStructureChanged()
+		updatePreviewModel()
 	end
 
 	local function build()
@@ -120,8 +143,9 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 		end
 		debounce = true
 
-		if ReplicatedStorage.remotes.build:InvokeServer(currentStructure, currentCf) then
-			canBuildAtTime = time() + 12
+		local cooldown = ReplicatedStorage.remotes.build:InvokeServer(currentStructure, currentCf)
+		if cooldown then
+			canBuildAtTime = time() + cooldown
 		end
 
 		debounce = false
@@ -151,6 +175,16 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 			end
 		end),
 	}
+
+	local clientDataConnection = ClientData.LevelChanged:Connect(function(statId)
+		if RELEVANT_BUILD_STATS[statId] then
+			updatePreviewModel()
+		end
+	end)
+	if clientDataConnection then
+		table.insert(connections, clientDataConnection)
+	end
+
 	local didBindAction = false
 	if UserInputService.TouchEnabled then
 		ContextActionService:BindAction(BUILD_ACTION_NAME, function()

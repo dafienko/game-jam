@@ -7,6 +7,8 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
+local Levels = require(ReplicatedStorage.modules.game.Levels)
+
 local ExplosionsInterface = require(script.Remotes.ExplosionsInterface)
 local BuildInterface = require(script.Remotes.BuildInterface)
 local PlayerData = require(script.PlayerData)
@@ -16,8 +18,10 @@ local toolTemplate = ServerStorage.ToolTemplate
 
 if RunService:IsStudio() then
 	remotes.explodeAtPosition.OnServerEvent:Connect(ExplosionsInterface.onExplodeAtPosition)
+else
+	remotes.explodeAtPosition:Destroy()
 end
-remotes.shootRocketAtPosition.OnServerEvent:Connect(ExplosionsInterface.onShootRocketAtPosition)
+remotes.shootRocketAtPosition.OnServerInvoke = ExplosionsInterface.onShootRocketAtPosition
 remotes.build.OnServerInvoke = BuildInterface.onBuild
 
 local function createTool(name: string): Tool
@@ -114,9 +118,25 @@ local function onPlayerAdded(player: Player)
 
 	player.CharacterAdded:Connect(function(char: any)
 		local humanoid: Humanoid = char.Humanoid
-		humanoid.WalkSpeed = if RunService:IsStudio() then 60 else 24
-		humanoid.JumpHeight = 10
+		local function updateHumanoidStats()
+			humanoid.WalkSpeed = if RunService:IsStudio()
+				then 60
+				else PlayerData.getStat(player, Levels.STAT_IDs.Character_WalkSpeed).value
+			humanoid.JumpHeight = PlayerData.getStat(player, Levels.STAT_IDs.Character_JumpHeight).value
+		end
+		updateHumanoidStats()
+
+		local connection = PlayerData.onLevelsChanged(player, function(levelId)
+			if levelId == Levels.STAT_IDs.Character_WalkSpeed or levelId == Levels.STAT_IDs.Character_JumpHeight then
+				updateHumanoidStats()
+			end
+		end)
+
 		humanoid.Died:Connect(function()
+			if connection then
+				connection:Disconnect()
+			end
+
 			checkAttributeKill(char)
 
 			task.wait(3)
