@@ -83,7 +83,7 @@ function BuildInterface.onBuild(player: Player, structureName: string, cf: CFram
 		return
 	end
 	task.spawn(constructBlueprint, player, res.Instance, cf - cf.Position + res.Position, blueprint)
-	player:SetAttribute("canBuildAtTime", time() + 30)
+	player:SetAttribute("canBuildAtTime", time() + 12)
 
 	return true
 end

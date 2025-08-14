@@ -2,6 +2,9 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local player = game:GetService("Players").LocalPlayer
+
+local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
 
 local camera = game.Workspace.CurrentCamera
 local shootRocketAtPositionRemote = ReplicatedStorage.remotes.shootRocketAtPosition
@@ -11,6 +14,10 @@ return function(tool: Tool)
 	local cooldown = 1
 
 	local function onActionInputAtScreenPosition(screenPosition: Vector2)
+		if not GameUtil.isPlayerAlive(player) then
+			return
+		end
+
 		if time() < canShootAtTime then
 			return
 		end
@@ -24,6 +31,10 @@ return function(tool: Tool)
 	end
 
 	tool.Equipped:Connect(function()
+		if not GameUtil.isPlayerAlive(player) then
+			return
+		end
+
 		local connections = {
 			UserInputService.InputEnded:Connect(function(input, gameProcessed)
 				if gameProcessed then

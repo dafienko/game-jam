@@ -98,4 +98,11 @@ function GameUtil.useAttribute(instance: Instance, attribute: string)
 	return value
 end
 
+function GameUtil.isPlayerAlive(player: Player)
+	local char = player.Character
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+	local hrp = char and char.PrimaryPart
+	return hrp and humanoid and humanoid.Health > 0
+end
+
 return GameUtil

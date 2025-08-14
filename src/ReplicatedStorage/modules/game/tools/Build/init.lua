@@ -103,6 +103,10 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 	end
 
 	local function build()
+		if not GameUtil.isPlayerAlive(player) then
+			return
+		end
+
 		if time() < canBuildAtTime then
 			return
 		end
@@ -117,7 +121,7 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 		debounce = true
 
 		if ReplicatedStorage.remotes.build:InvokeServer(currentStructure, currentCf) then
-			canBuildAtTime = time() + 30
+			canBuildAtTime = time() + 12
 		end
 
 		debounce = false
@@ -177,15 +181,13 @@ local function startBuilding(tool: Tool, humanoidRootPart: Part): () -> ()
 end
 
 return function(tool: Tool)
-	local char = player.Character
-	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-	local hrp = char and char.PrimaryPart
-	if not (hrp and humanoid and humanoid.Health > 0) then
-		warn("invalid character")
-		return
-	end
-
 	tool.Equipped:Connect(function()
+		local hrp = player.Character and player.Character.PrimaryPart
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if not (hrp and humanoid and GameUtil.isPlayerAlive(player)) then
+			return
+		end
+
 		local stopBuilding = startBuilding(tool, hrp)
 
 		local connections = {}
