@@ -9,6 +9,7 @@ local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
 local PROFILE_TEMPLATE = {
 	Studs = 0,
 	KOs = 0,
+	Wins = 0,
 }
 type ProfileData = typeof(PROFILE_TEMPLATE)
 
@@ -19,7 +20,9 @@ local Profiles: { [Player]: Profile } = {}
 local dataSignals: { [Player]: {
 	Studs: Signal.Signal<number>,
 	KOs: Signal.Signal<number>,
-} } = {}
+	Wins: Signal.Signal<number>,
+} } =
+	{}
 
 local PlayerData = {}
 
@@ -27,6 +30,7 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 	dataSignals[player] = {
 		Studs = Signal.new(),
 		KOs = Signal.new(),
+		Wins = Signal.new(),
 	}
 
 	local profile = PlayerStore:StartSessionAsync(`{player.UserId}`, {
@@ -102,6 +106,17 @@ function PlayerData.addKO(player: Player)
 	signals.KOs:Fire(profile.Data.KOs)
 end
 
+function PlayerData.addWin(player: Player)
+	local profile = Profiles[player]
+	local signals = dataSignals[player]
+	if not (profile and signals) then
+		return
+	end
+
+	profile.Data.Wins += 1
+	signals.Wins:Fire(profile.Data.Wins)
+end
+
 function PlayerData.onStudsChanged(player: Player, callback: (number) -> ())
 	local signals = dataSignals[player]
 	if not signals then
@@ -118,6 +133,15 @@ function PlayerData.onKOsChanged(player: Player, callback: (number) -> ())
 	end
 
 	signals.KOs:Connect(callback)
+end
+
+function PlayerData.onWinsChanged(player: Player, callback: (number) -> ())
+	local signals = dataSignals[player]
+	if not signals then
+		return
+	end
+
+	signals.Wins:Connect(callback)
 end
 
 return PlayerData

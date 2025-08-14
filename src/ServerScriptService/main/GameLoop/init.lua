@@ -2,7 +2,11 @@
 
 local Teams = game:GetService("Teams")
 local ServerStorage = game:GetService("ServerStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+
+local PlayerData = require(ServerScriptService.main.PlayerData)
 
 local TeamDoor = require(script.TeamDoor)
 
@@ -40,6 +44,7 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 		team.Name = teamColorName
 		team.TeamColor = BrickColor.new(teamColorName :: any)
 		team.AutoAssignable = false
+		team:SetAttribute("score", 0)
 		team.Parent = Teams
 		table.insert(teams, team)
 
@@ -64,9 +69,33 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 		for _, v in teamDoors do
 			v:Destroy()
 		end
+
+		local highestTeamScore: number = -1
+		local isDraw = false
+		local winningTeam: Team?
+		for _, v in teams do
+			local score = v:GetAttribute("score") :: number
+			if score == highestTeamScore then
+				isDraw = true
+			elseif score > highestTeamScore then
+				highestTeamScore = score
+				isDraw = false
+				winningTeam = v
+			end
+		end
+		if isDraw then
+			ReplicatedStorage:SetAttribute("isDraw", true)
+		elseif winningTeam then
+			for _, v in winningTeam:GetPlayers() do
+				PlayerData.addWin(v)
+			end
+			ReplicatedStorage:SetAttribute("winningTeamName", winningTeam.Name)
+			ReplicatedStorage:SetAttribute("winningTeamColor", winningTeam.TeamColor.Color)
+		end
 		for _, v in teams do
 			v:Destroy()
 		end
+
 		for _, v in Players:GetPlayers() do
 			v.Team = Teams.Neutral
 
@@ -98,6 +127,11 @@ while true do
 	local cleanup = startNewGame(maps.Map1)
 	countdown(GAME_DURATION_SECONDS)
 	cleanup()
+	task.delay(5, function()
+		ReplicatedStorage:SetAttribute("isDraw", nil)
+		ReplicatedStorage:SetAttribute("winningTeamName", nil)
+		ReplicatedStorage:SetAttribute("winningTeamColor", nil)
+	end)
 	loadingGui.Enabled = true
 	countdown(INTERMISSION_SECONDS)
 end

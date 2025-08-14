@@ -1,5 +1,9 @@
 --!strict
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.modules.dependencies.React)
+
 local GameUtil = {}
 
 local WALL_PART_SIZE = Vector3.new(5, 3, 2)
@@ -76,6 +80,22 @@ function GameUtil.generateBridgeBlueprint(width: number, length: number): Bluepr
 		lastRow = row
 	end
 	return blueprint
+end
+
+function GameUtil.useAttribute(instance: Instance, attribute: string)
+	local value, setValue = React.useState(instance:GetAttribute(attribute))
+
+	React.useEffect(function()
+		local connection = instance:GetAttributeChangedSignal(attribute):Connect(function()
+			setValue(instance:GetAttribute(attribute))
+		end)
+
+		return function()
+			connection:Disconnect()
+		end
+	end)
+
+	return value
 end
 
 return GameUtil

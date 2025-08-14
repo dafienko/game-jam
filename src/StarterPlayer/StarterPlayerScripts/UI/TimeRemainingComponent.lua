@@ -4,7 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.modules.dependencies.React)
 
-return function()
+return function(props: { LayoutOrder: number })
 	local secondsRemaining, setSecondsRemaining = React.useState(game.Workspace:GetAttribute("timeRemaining") or 0)
 	React.useEffect(function()
 		local connection = game.Workspace:GetAttributeChangedSignal("timeRemaining"):Connect(function()
@@ -18,6 +18,7 @@ return function()
 	local minutes = secondsRemaining // 60
 	local seconds = secondsRemaining - minutes * 60
 	return React.createElement("TextLabel", {
+		LayoutOrder = props.LayoutOrder,
 		BorderSizePixel = 0,
 		Size = UDim2.fromOffset(80, 40),
 		TextScaled = true,

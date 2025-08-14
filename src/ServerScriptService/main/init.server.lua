@@ -49,6 +49,12 @@ local function checkAttributeKill(char: Model)
 	end
 
 	PlayerData.addKO(taggingPlayer)
+
+	local team = taggingPlayer.Team
+	local score = team and team:GetAttribute("score")
+	if team and score then
+		team:SetAttribute("score", score + 1)
+	end
 end
 
 local function onPlayerAdded(player: Player)
@@ -64,20 +70,28 @@ local function onPlayerAdded(player: Player)
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 
-	local KOsValue = Instance.new("IntValue")
-	KOsValue.Value = playerData.KOs
-	KOsValue.Name = "KO's"
-	KOsValue.Parent = leaderstats
+	local kosValue = Instance.new("IntValue")
+	kosValue.Value = playerData.KOs
+	kosValue.Name = "KO's"
+	kosValue.Parent = leaderstats
 	PlayerData.onKOsChanged(player, function(kos)
-		KOsValue.Value = kos
+		kosValue.Value = kos
 	end)
 
-	local StudsValue = Instance.new("IntValue")
-	StudsValue.Value = playerData.Studs
-	StudsValue.Name = "Points"
-	StudsValue.Parent = leaderstats
+	local studsValue = Instance.new("IntValue")
+	studsValue.Value = playerData.Studs
+	studsValue.Name = "Points"
+	studsValue.Parent = leaderstats
 	PlayerData.onStudsChanged(player, function(studs)
-		StudsValue.Value = studs
+		studsValue.Value = studs
+	end)
+
+	local winsValue = Instance.new("IntValue")
+	winsValue.Value = playerData.Wins
+	winsValue.Name = "Wins"
+	winsValue.Parent = leaderstats
+	PlayerData.onWinsChanged(player, function(studs)
+		winsValue.Value = studs
 	end)
 
 	leaderstats.Parent = player
