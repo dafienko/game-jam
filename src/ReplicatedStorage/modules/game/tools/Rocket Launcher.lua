@@ -29,7 +29,10 @@ return function(tool: Tool)
 
 		local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y, 0.1)
 		local L = 400
-		local res = game.Workspace:Raycast(ray.Origin, ray.Direction * L)
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { player.Character }
+		local res = game.Workspace:Raycast(ray.Origin, ray.Direction * L, params)
 		local pos = if res then res.Position else ray.Origin + ray.Direction * L
 		local cooldown = shootRocketAtPositionRemote:InvokeServer(tool, pos)
 		if cooldown then
