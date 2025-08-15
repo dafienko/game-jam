@@ -118,14 +118,9 @@ local function explodeAtPosition(
 		end)
 	end
 
-	local ignoreTeam = fromPlayer and fromPlayer.Team
 	explosion.Hit:Connect(function(part, dist)
 		local player, char = Util.getPlayerAndCharacterFromInstance(part)
 		if player or char then
-			return
-		end
-
-		if ignoreTeam and part.BrickColor == ignoreTeam.TeamColor then
 			return
 		end
 

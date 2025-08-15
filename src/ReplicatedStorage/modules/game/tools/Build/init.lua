@@ -220,9 +220,12 @@ return function(tool: Tool)
 
 		local stopBuilding = startBuilding(tool, hrp)
 
-		local connections = {}
+		local connections: { any } = {}
 		local function cleanup()
 			stopBuilding()
+			for _, v in connections do
+				v:Disconnect()
+			end
 		end
 
 		table.insert(connections, tool.Unequipped:Once(cleanup))

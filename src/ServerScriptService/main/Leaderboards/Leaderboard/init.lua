@@ -68,7 +68,7 @@ function Leaderboard.new(dataStoreName: string, title: string): Leaderboard
 	task.spawn(function()
 		while true do
 			xpcall(Leaderboard._refresh, warn, self)
-			task.wait(60 * 5)
+			task.wait(5 * 60)
 		end
 	end)
 
@@ -114,14 +114,14 @@ function Leaderboard._render(self: Leaderboard, data: LeaderboardUiComponent.Dat
 		self.currentPodiumModels = nil
 	end
 
+	local models = {}
+	self.currentPodiumModels = models
 	for i, podiumPart in self.podiumParts do
 		local row = data[i]
 		if not row then
 			break
 		end
 
-		local models = {}
-		self.currentPodiumModels = models
 		task.spawn(function()
 			local char = Players:CreateHumanoidModelFromUserId(row.userId)
 			if self.renderIndex ~= renderIndex then

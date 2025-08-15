@@ -20,6 +20,13 @@ model:PivotTo(handle.CFrame)
 model.Name = "Model"
 tool.TextureId = model:GetAttribute("thumbnail")
 
+for _, v in model:GetDescendants() do
+	if v:IsA("BasePart") then
+		v.Massless = true
+		v.CanCollide = false
+	end
+end
+
 local w = Instance.new("WeldConstraint")
 w.Part0 = handle
 w.Part1 = model.PrimaryPart
