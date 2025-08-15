@@ -1,11 +1,14 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketPlaceService = game:GetService("MarketplaceService")
+local player = game:GetService("Players").LocalPlayer
 
 local React = require(ReplicatedStorage.modules.dependencies.React)
 local Levels = require(ReplicatedStorage.modules.game.Levels)
 local ClientData = require(ReplicatedStorage.modules.game.ClientData)
 local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
+local Products = require(ReplicatedStorage.modules.game.Products)
 
 local ButtonComponent = require(script.Parent.Parent.ButtonComponent)
 
@@ -43,6 +46,15 @@ return function(props: Props)
 			if canAfford then
 				ReplicatedStorage.remotes.upgradeStat:InvokeServer(props.statId)
 			else
+				local needsPoints = if nextStat then nextStat.cost - points else 0
+				local productId = Products.DevProducts.smallBrickPack.id
+				if needsPoints >= 15000 then
+					productId = Products.DevProducts.largeBrickPack.id
+				elseif needsPoints >= 3500 then
+					productId = Products.DevProducts.mediumBrickPack.id
+				end
+
+				MarketPlaceService:PromptProductPurchase(player, productId)
 			end
 		end, warn)
 

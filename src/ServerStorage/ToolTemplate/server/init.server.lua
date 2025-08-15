@@ -18,6 +18,7 @@ handle.Parent = tool
 local model = ReplicatedStorage.assets.tools[toolName]:Clone()
 model:PivotTo(handle.CFrame)
 model.Name = "Model"
+tool.TextureId = model:GetAttribute("thumbnail")
 
 local w = Instance.new("WeldConstraint")
 w.Part0 = handle
