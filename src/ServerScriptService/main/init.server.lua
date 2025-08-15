@@ -99,6 +99,18 @@ local function onPlayerAdded(player: Player)
 
 	leaderstats.Parent = player
 
+	task.delay(5, function()
+		if player.Parent ~= Players then
+			return
+		end
+
+		if player.Character then
+			return
+		end
+
+		player:LoadCharacter()
+	end)
+
 	xpcall(function()
 		player:SetAttribute(
 			Products.GamePasses.tripleRocketLauncher.attribute,
