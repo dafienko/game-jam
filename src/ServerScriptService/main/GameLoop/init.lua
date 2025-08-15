@@ -129,19 +129,29 @@ local function countdown(seconds: number)
 	end
 end
 
+local mapOrder = maps:GetChildren()
+local mapIndex = math.random(1, #mapOrder)
+
 while true do
 	loadingGui.Enabled = false
-	local map = maps.Animals
+
+	local map = mapOrder[mapIndex]
 	local cleanup = startNewGame(map)
+
 	countdown(map:GetAttribute("duration"))
+
 	cleanup()
 	task.delay(5, function()
 		ReplicatedStorage:SetAttribute("isDraw", nil)
 		ReplicatedStorage:SetAttribute("winningTeamName", nil)
 		ReplicatedStorage:SetAttribute("winningTeamColor", nil)
 	end)
+
 	loadingGui.Enabled = true
+
 	countdown(INTERMISSION_SECONDS)
+
+	mapIndex = (mapIndex % #mapOrder) + 1
 end
 
 return nil
