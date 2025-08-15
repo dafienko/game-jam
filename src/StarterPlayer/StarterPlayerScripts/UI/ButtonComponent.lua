@@ -15,6 +15,7 @@ type Props = {
 	Position: UDim2?,
 	AnchorPoint: Vector2?,
 	LayoutOrder: number?,
+	ClipsDescendants: boolean?,
 	disabled: boolean?,
 	color: Color3?,
 	hoverColor: Color3?,
@@ -74,6 +75,7 @@ return function(props: Props)
 				CornerRadius = UDim.new(0, 8),
 			}),
 			float = React.createElement("Frame", {
+				ClipsDescendants = props.ClipsDescendants,
 				Size = UDim2.fromScale(1, 1),
 				BorderSizePixel = 0,
 				BackgroundColor3 = buttonColor,

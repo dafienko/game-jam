@@ -1,7 +1,11 @@
 --!strict
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
+local ServerStorage = game:GetService("ServerStorage")
+
+local toolTemplate = ServerStorage.ToolTemplate
 
 local Util = {}
 
@@ -76,6 +80,18 @@ function Util.playSoundAtPositionAsync(
 	end
 	sound:Play()
 	Debris:AddItem(soundPart, sound.TimeLength + 1)
+end
+
+function Util.createTool(name: string): Tool
+	local tool = toolTemplate:Clone()
+	tool.Name = name
+	tool.server.Enabled = true
+
+	if not ReplicatedStorage.modules.game.tools:FindFirstChild(name) then
+		tool.client:Destroy()
+	end
+
+	return tool
 end
 
 return Util

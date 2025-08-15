@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketPlaceService = game:GetService("MarketplaceService")
 
 local React = require(ReplicatedStorage.modules.dependencies.React)
 
@@ -96,6 +97,19 @@ function GameUtil.useAttribute(instance: Instance, attribute: string)
 	end)
 
 	return value
+end
+
+function GameUtil.useProductInfo(productId: number, productType: Enum.InfoType): number?
+	local price, setPrice = React.useState(nil)
+
+	React.useEffect(function()
+		xpcall(function()
+			local info = MarketPlaceService:GetProductInfo(productId, productType)
+			setPrice(info.PriceInRobux)
+		end, warn)
+	end, { productId, productType } :: { any })
+
+	return price
 end
 
 function GameUtil.isPlayerAlive(player: Player)

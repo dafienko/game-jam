@@ -10,7 +10,6 @@ local PlayerData = require(ServerScriptService.main.PlayerData)
 
 local TeamDoor = require(script.TeamDoor)
 
-local GAME_DURATION_SECONDS = 60 * 10
 local INTERMISSION_SECONDS = 5
 
 local maps = ServerStorage.Maps
@@ -124,8 +123,9 @@ end
 
 while true do
 	loadingGui.Enabled = false
-	local cleanup = startNewGame(maps.Map1)
-	countdown(GAME_DURATION_SECONDS)
+	local map = maps.Animals
+	local cleanup = startNewGame(map)
+	countdown(map:GetAttribute("duration"))
 	cleanup()
 	task.delay(5, function()
 		ReplicatedStorage:SetAttribute("isDraw", nil)

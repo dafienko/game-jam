@@ -173,18 +173,33 @@ local function propelRocket(rocket: Model, player: Player)
 		explodeAtPosition(player, position, explosionSize, explosionPower, dir * 2000 * explosionPower)
 	end
 
+	local origin = rocket:GetPivot()
+	local xSeed = math.random() * 100
+	local ySeed = math.random() * 100
+	local wobbleScale = 7
+	local wobbleDistanceScale = 0.01
 	heartbeatConnection = RunService.Heartbeat:Connect(function(dt)
 		speed = math.min(rocketMaxSpeed, speed + rocketAcceleration * dt)
 		local dist = speed * dt
 		distanceTraveled += dist
 		local pivot = rocket:GetPivot()
-		local newCF = pivot + dir * dist
+		local wobble = CFrame.new(
+			Vector3.new(
+				math.noise(xSeed, distanceTraveled * wobbleDistanceScale),
+				math.noise(ySeed, distanceTraveled * wobbleDistanceScale),
+				0
+			)
+				* wobbleScale
+				* math.min(distanceTraveled / 50, 1)
+		)
+
+		local newCF = origin * wobble + dir * distanceTraveled
 		if distanceTraveled > rocketMaxDistance then
 			explode(newCF.Position)
 			return
 		end
 
-		local res = game.Workspace:Raycast(pivot.Position, dir * dist, params)
+		local res = game.Workspace:Raycast(pivot.Position, newCF.Position - pivot.Position, params)
 		if res then
 			explode(res.Position)
 			return
@@ -194,25 +209,7 @@ local function propelRocket(rocket: Model, player: Player)
 	end)
 end
 
-function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, targetPosition: any)
-	assert(t.instanceOf("Tool")(rpg))
-	assert(t.Vector3(targetPosition))
-	assert(player.Character and isCharacterValid(player.Character), "invalid character")
-	assert(rpg:IsDescendantOf(player.Character), "RPG must be equipped")
-
-	local nextRocketTime = player:GetAttribute("nextRocketTime") :: number?
-	if time() < (nextRocketTime or 0) then
-		return
-	end
-	player:SetAttribute("nextRocketTime", time() + 1)
-
-	local rpgModel = rpg:FindFirstChild("Model")
-	local mainPart = rpgModel and rpgModel:FindFirstChild("main") :: any
-	if mainPart then
-		mainPart.shootSound:Play()
-	end
-	local muzzleAttachment = mainPart and mainPart.muzzle
-	local shootFrom = if muzzleAttachment then muzzleAttachment.WorldCFrame else rpg:GetPivot()
+local function createRocket(player: Player, cf: CFrame): Model
 	local rocket = rocketTemplate:Clone()
 	for _, v in rocket:GetDescendants() do
 		if v:IsA("BasePart") then
@@ -222,10 +219,36 @@ function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, 
 		end
 	end
 	rocket.PrimaryPart.flyingSound:Play()
-	rocket:PivotTo(CFrame.new(shootFrom.Position, targetPosition))
-	propelRocket(rocket, player)
-	rocket.Parent = game.Workspace
-	return PlayerData.getStat(player, Levels.STAT_IDs.RocketLauncher_Cooldown).value
+	rocket:PivotTo(cf)
+	return rocket
+end
+
+function ExplosionsInterface.onShootRocketAtPosition(player: Player, rpg: Tool, targetPosition: any)
+	assert(t.instanceOf("Tool")(rpg))
+	assert(t.Vector3(targetPosition))
+	assert(player.Character and isCharacterValid(player.Character), "invalid character")
+	assert(rpg:IsDescendantOf(player.Character), "RPG must be equipped")
+	assert(rpg.Name == "Rocket Launcher" or rpg.Name == "Triple Rocket Launcher", rpg.Name)
+
+	local cooldown = PlayerData.getStat(player, Levels.STAT_IDs.RocketLauncher_Cooldown).value
+	local nextRocketTime = rpg:GetAttribute("nextRocketTime") :: number? or 0
+	if time() < nextRocketTime then
+		return
+	end
+	rpg:SetAttribute("nextRocketTime", time() + cooldown)
+
+	local rpgModel = rpg:FindFirstChild("Model")
+	local launchers = rpgModel and rpgModel:FindFirstChild("launchers")
+	if launchers then
+		for i, mainPart: any in launchers:GetChildren() do
+			mainPart.shootSound:Play()
+			local rocket = createRocket(player, CFrame.new(mainPart.muzzle.WorldPosition, targetPosition))
+			propelRocket(rocket, player)
+			rocket.Parent = game.Workspace
+		end
+	end
+
+	return cooldown
 end
 
 local function onBombAdded(bomb: Model)

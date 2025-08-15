@@ -5,9 +5,13 @@ game.Workspace.sandbox:Destroy()
 local ServerStorage = game:GetService("ServerStorage")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local MarketPlaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 local Levels = require(ReplicatedStorage.modules.game.Levels)
+local Util = require(ServerScriptService.Util)
+local Products = require(ReplicatedStorage.modules.game.Products)
 
 local ExplosionsInterface = require(script.Remotes.ExplosionsInterface)
 local StatsInterface = require(script.Remotes.StatsInterface)
@@ -15,7 +19,8 @@ local BuildInterface = require(script.Remotes.BuildInterface)
 local PlayerData = require(script.PlayerData)
 
 local remotes = ReplicatedStorage.remotes
-local toolTemplate = ServerStorage.ToolTemplate
+
+MarketPlaceService.ProcessReceipt = require(script.ProcessReceipt)
 
 if RunService:IsStudio() then
 	remotes.explodeAtPosition.OnServerEvent:Connect(ExplosionsInterface.onExplodeAtPosition)
@@ -26,17 +31,13 @@ remotes.shootRocketAtPosition.OnServerInvoke = ExplosionsInterface.onShootRocket
 remotes.build.OnServerInvoke = BuildInterface.onBuild
 remotes.upgradeStat.OnServerInvoke = StatsInterface.onUpgradeStat
 
-local function createTool(name: string): Tool
-	local tool = toolTemplate:Clone()
-	tool.Name = name
-	tool.server.Enabled = true
-
-	if not ReplicatedStorage.modules.game.tools:FindFirstChild(name) then
-		tool.client:Destroy()
-	end
-
-	return tool
-end
+local ToolNames = {
+	RocketLauncher = "Rocket Launcher",
+	TripleRocketLauncher = "Triple Rocket Launcher",
+	Sword = "Sword",
+	Bomb = "Bomb",
+	Build = "Build",
+}
 
 local function checkAttributeKill(char: Model)
 	local taggedByUserId = char:GetAttribute("lastTaggedBy") :: number?
@@ -64,10 +65,6 @@ local function checkAttributeKill(char: Model)
 end
 
 local function onPlayerAdded(player: Player)
-	if RunService:IsStudio() then
-		player.CanLoadCharacterAppearance = false
-	end
-
 	local playerData = PlayerData.loadPlayerData(player)
 	if not playerData then
 		return
@@ -108,11 +105,39 @@ local function onPlayerAdded(player: Player)
 			ServerStorage.Explode:Clone().Parent = backpack
 		end
 
-		createTool("Rocket Launcher").Parent = backpack
-		createTool("Sword").Parent = backpack
-		createTool("Bomb").Parent = backpack
-		createTool("Build").Parent = backpack
+		Util.createTool(ToolNames.Sword).Parent = backpack
+		if player:GetAttribute(Products.GamePasses.tripleRocketLauncher.attribute) then
+			Util.createTool(ToolNames.TripleRocketLauncher).Parent = backpack
+		end
+		Util.createTool(ToolNames.RocketLauncher).Parent = backpack
+		Util.createTool(ToolNames.Bomb).Parent = backpack
+		Util.createTool(ToolNames.Build).Parent = backpack
 	end
+
+	player:GetAttributeChangedSignal(Products.GamePasses.tripleRocketLauncher.attribute):Connect(function()
+		if not player:GetAttribute(Products.GamePasses.tripleRocketLauncher.attribute) then
+			return
+		end
+
+		local char = player.Character
+		if not char or char:FindFirstChild(ToolNames.TripleRocketLauncher) then
+			return
+		end
+
+		local backpack = player.Backpack
+		if backpack:FindFirstChild(ToolNames.TripleRocketLauncher) then
+			return
+		end
+
+		Util.createTool(ToolNames.TripleRocketLauncher).Parent = backpack
+	end)
+
+	task.spawn(function()
+		player:SetAttribute(
+			Products.GamePasses.tripleRocketLauncher.attribute,
+			MarketPlaceService:UserOwnsGamePassAsync(player.UserId, Products.GamePasses.tripleRocketLauncher.id)
+		)
+	end)
 
 	if player.Backpack then
 		onNewBackpack(player.Backpack)

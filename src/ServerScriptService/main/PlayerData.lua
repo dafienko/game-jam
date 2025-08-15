@@ -133,7 +133,7 @@ function PlayerData.addDamage(player: Player, delta: number)
 
 	profile.Data.Damage += delta
 	signals.Damage:Fire(profile.Data.Damage)
-	PlayerData._addPoints(player, delta * POINTS_PER_DAMAGE)
+	PlayerData.addPoints(player, delta * POINTS_PER_DAMAGE)
 end
 
 function PlayerData.addKO(player: Player)
@@ -145,7 +145,7 @@ function PlayerData.addKO(player: Player)
 
 	profile.Data.KOs += 1
 	signals.KOs:Fire(profile.Data.KOs)
-	PlayerData._addPoints(player, POINTS_PER_KO)
+	PlayerData.addPoints(player, POINTS_PER_KO)
 end
 
 function PlayerData.addWin(player: Player)
@@ -157,7 +157,7 @@ function PlayerData.addWin(player: Player)
 
 	profile.Data.Wins += 1
 	signals.Wins:Fire(profile.Data.Wins)
-	PlayerData._addPoints(player, POINTS_PER_WIN)
+	PlayerData.addPoints(player, POINTS_PER_WIN)
 end
 
 local function queuePointsUpdate(player: Player)
@@ -181,16 +181,17 @@ local function queuePointsUpdate(player: Player)
 	end)
 end
 
-function PlayerData._addPoints(player: Player, amount: number)
+function PlayerData.addPoints(player: Player, amount: number): boolean
 	assert(amount > 0)
 	local profile = Profiles[player]
 	local signals = dataSignals[player]
 	if not (profile and signals) then
-		return
+		return false
 	end
 
 	profile.Data.Points += amount
 	queuePointsUpdate(player)
+	return true
 end
 
 function PlayerData.deductPoints(player: Player, amount: number)
@@ -278,6 +279,19 @@ end
 function PlayerData.getStat(player: Player?, statId: number): Levels.StatLevel
 	local myLevel = player and PlayerData.getStatLevel(player, statId)
 	return Levels.LEVELS[statId][myLevel or 1]
+end
+
+function PlayerData.waitForProfile(player: Player): boolean
+	local profile = Profiles[player]
+	while profile == nil and player.Parent == Players do
+		profile = Profiles[player]
+		if profile ~= nil then
+			break
+		end
+		task.wait()
+	end
+
+	return profile ~= nil and profile:IsActive()
 end
 
 updateClientLevelsRemote.OnServerEvent:Connect(function(player: Player)

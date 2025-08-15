@@ -11,6 +11,7 @@ local TimeRemainingComponent = require(script.Parent.TimeRemainingComponent)
 local WinDialogComponent = require(script.Parent.WinDialogComponent)
 local TeamScoresComponent = require(script.Parent.TeamScoresComponent)
 local UpgradesModalComponent = require(script.Parent.UpgradesModalComponent)
+local ShopModalComponent = require(script.Parent.ShopModalComponent)
 local ButtonComponent = require(script.Parent.ButtonComponent)
 
 local function PointsComponent(props: { LayoutOrder: number })
@@ -105,6 +106,7 @@ end
 local Modals = {
 	None = 1,
 	Upgrades = 2,
+	Shop = 3,
 }
 
 return function()
@@ -115,6 +117,16 @@ return function()
 				return Modals.None
 			else
 				return Modals.Upgrades
+			end
+		end)
+	end, {})
+
+	local onShopPressed = React.useCallback(function()
+		setModal(function(current)
+			if current == Modals.Shop then
+				return Modals.None
+			else
+				return Modals.Shop
 			end
 		end)
 	end, {})
@@ -168,9 +180,30 @@ return function()
 				LayoutOrder = 2,
 				onActivated = onUpgradesPressed,
 			}),
+			shopButton = React.createElement(ButtonComponent, {
+				LayoutOrder = 3,
+				Size = UDim2.fromScale(1, 0.45),
+				SizeConstraint = Enum.SizeConstraint.RelativeXX,
+				color = Color3.fromRGB(155, 255, 118),
+				onActivated = onShopPressed,
+			}, {
+				text = React.createElement("TextLabel", {
+					Text = "Shop",
+					Size = UDim2.fromScale(0.7, 0.9),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					TextScaled = true,
+					Font = Enum.Font.SourceSansBold,
+					TextColor3 = Color3.new(),
+					BackgroundTransparency = 1,
+				}),
+			}),
 		}),
 		upgradesModal = if modal == Modals.Upgrades
 			then React.createElement(UpgradesModalComponent, { onExit = onExitModal })
+			else nil,
+		shopModal = if modal == Modals.Shop
+			then React.createElement(ShopModalComponent, { onExit = onExitModal })
 			else nil,
 	})
 end
