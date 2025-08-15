@@ -176,7 +176,7 @@ local function propelRocket(rocket: Model, player: Player)
 	local origin = rocket:GetPivot()
 	local xSeed = math.random() * 100
 	local ySeed = math.random() * 100
-	local wobbleScale = 7
+	local wobbleScale = 5
 	local wobbleDistanceScale = 0.01
 	heartbeatConnection = RunService.Heartbeat:Connect(function(dt)
 		speed = math.min(rocketMaxSpeed, speed + rocketAcceleration * dt)
@@ -190,7 +190,7 @@ local function propelRocket(rocket: Model, player: Player)
 				0
 			)
 				* wobbleScale
-				* math.min(distanceTraveled / 50, 1)
+				* math.min(math.pow(distanceTraveled / 70, 2), 1)
 		)
 
 		local newCF = origin * wobble + dir * distanceTraveled

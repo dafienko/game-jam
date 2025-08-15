@@ -72,6 +72,10 @@ end
 function TeamDoor.UpdateStatus(self: TeamDoor)
 	local min = math.huge
 	for _, v in Teams:GetTeams() do
+		if v.Name == "Neutral" then
+			continue
+		end
+
 		min = math.min(min, #v:GetPlayers())
 	end
 

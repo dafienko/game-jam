@@ -99,6 +99,13 @@ local function onPlayerAdded(player: Player)
 
 	leaderstats.Parent = player
 
+	xpcall(function()
+		player:SetAttribute(
+			Products.GamePasses.tripleRocketLauncher.attribute,
+			MarketPlaceService:UserOwnsGamePassAsync(player.UserId, Products.GamePasses.tripleRocketLauncher.id)
+		)
+	end, warn)
+
 	local function onNewBackpack(backpack)
 		if RunService:IsStudio() then
 			ServerStorage.Build:Clone().Parent = backpack
@@ -130,13 +137,6 @@ local function onPlayerAdded(player: Player)
 		end
 
 		Util.createTool(ToolNames.TripleRocketLauncher).Parent = backpack
-	end)
-
-	task.spawn(function()
-		player:SetAttribute(
-			Products.GamePasses.tripleRocketLauncher.attribute,
-			MarketPlaceService:UserOwnsGamePassAsync(player.UserId, Products.GamePasses.tripleRocketLauncher.id)
-		)
 	end)
 
 	if player.Backpack then
@@ -175,6 +175,8 @@ local function onPlayerAdded(player: Player)
 			player:LoadCharacter()
 		end)
 		onNewBackpack(player.Backpack)
+
+		char.Humanoid:ApplyDescription(game.Players:GetHumanoidDescriptionFromUserId(player.UserId))
 	end)
 
 	player:LoadCharacter()

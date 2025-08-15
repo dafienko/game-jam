@@ -20,9 +20,12 @@ return function(props: Props)
 	local scrollingFrameRef = (React.useRef(nil) :: any) :: { current: ScrollingFrame }
 
 	React.useEffect(function()
-		local connection = layoutRef.current:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		local function updateCanvasSize()
 			scrollingFrameRef.current.CanvasSize = UDim2.fromOffset(0, layoutRef.current.AbsoluteContentSize.Y)
-		end)
+		end
+
+		local connection = layoutRef.current:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
+		updateCanvasSize()
 
 		return function()
 			connection:Disconnect()

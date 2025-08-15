@@ -23,13 +23,13 @@ local function PointsComponent(props: { LayoutOrder: number })
 		SizeConstraint = Enum.SizeConstraint.RelativeXX,
 		BackgroundTransparency = 1,
 		Text = `{GameUtil.commaNumber(points)} 🧱`,
-		TextXAlignment = Enum.TextXAlignment.Left,
 		TextScaled = true,
+		Font = Enum.Font.SourceSansBold,
 		TextColor3 = Color3.fromHSV(0, 0, 1),
 	}, {
 		stroke = React.createElement("UIStroke", {
 			Thickness = 1,
-			Color = Color3.fromHSV(0, 0, 0),
+			Color = Color3.fromHSV(0, 0, 0.3),
 		}),
 	})
 end
