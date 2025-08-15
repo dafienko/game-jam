@@ -129,8 +129,8 @@ local function countdown(seconds: number)
 	end
 end
 
-local mapOrder = maps:GetChildren()
-local mapIndex = math.random(1, #mapOrder)
+local mapOrder = { maps.FourTowers, maps.Animals }
+local mapIndex = 1
 
 while true do
 	loadingGui.Enabled = false

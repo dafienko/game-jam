@@ -96,6 +96,28 @@ local function explodeAtPosition(
 		end
 	end
 
+	local totalDestruction: number?
+	local function sendDestructionFx(amount: number)
+		if not fromPlayer then
+			return
+		end
+
+		if amount <= 0 then
+			return
+		end
+
+		local initial = totalDestruction
+		totalDestruction = (initial or 0) + amount
+		if initial then
+			return
+		end
+
+		task.defer(function()
+			ReplicatedStorage.remotes.destructionFx:FireClient(fromPlayer, position, totalDestruction)
+			totalDestruction = nil
+		end)
+	end
+
 	local ignoreTeam = fromPlayer and fromPlayer.Team
 	explosion.Hit:Connect(function(part, dist)
 		local player, char = Util.getPlayerAndCharacterFromInstance(part)
@@ -113,18 +135,21 @@ local function explodeAtPosition(
 
 		local strength = 1 - math.pow(math.clamp(dist / blastRadius, 0, 1), 3)
 		local joints = part:GetJoints()
+		local n = 0
 		if #joints > 0 then
 			for _, v in joints do
 				if math.random() > destroyJointPercent * strength then
 					continue
 				end
 
+				n += 1
 				v:Destroy()
 				if fromPlayer then
 					PlayerData.addDamage(fromPlayer, 1)
 				end
 			end
 		end
+		sendDestructionFx(n)
 
 		applyExplosionImpulse(part, position, impulse, strength)
 	end)

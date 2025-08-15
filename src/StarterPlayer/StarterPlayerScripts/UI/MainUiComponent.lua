@@ -6,6 +6,7 @@ local React = require(ReplicatedStorage.modules.dependencies.React)
 local ClientData = require(ReplicatedStorage.modules.game.ClientData)
 local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
 local Levels = require(ReplicatedStorage.modules.game.Levels)
+local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
 
 local TimeRemainingComponent = require(script.Parent.TimeRemainingComponent)
 local WinDialogComponent = require(script.Parent.WinDialogComponent)
@@ -13,11 +14,15 @@ local TeamScoresComponent = require(script.Parent.TeamScoresComponent)
 local UpgradesModalComponent = require(script.Parent.UpgradesModalComponent)
 local ShopModalComponent = require(script.Parent.ShopModalComponent)
 local ButtonComponent = require(script.Parent.ButtonComponent)
+local ParticlesControllerComponent = require(script.Parent.ParticleControllerComponent)
 
-local function PointsComponent(props: { LayoutOrder: number })
+local camera = game.Workspace.CurrentCamera
+
+local PointsComponent = React.forwardRef(function(props: { LayoutOrder: number }, ref)
 	local points = ClientData.usePoints()
 
 	return React.createElement("TextLabel", {
+		ref = ref,
 		LayoutOrder = props.LayoutOrder,
 		Size = UDim2.fromScale(1, 0.2),
 		SizeConstraint = Enum.SizeConstraint.RelativeXX,
@@ -32,7 +37,7 @@ local function PointsComponent(props: { LayoutOrder: number })
 			Color = Color3.fromHSV(0, 0, 0.3),
 		}),
 	})
-end
+end)
 
 local function UpgradesButtonComponent(props: { LayoutOrder: number, onActivated: () -> () })
 	local points = ClientData.usePoints()
@@ -110,6 +115,29 @@ local Modals = {
 }
 
 return function()
+	local targetRef = React.useRef(nil)
+	local emitSignal = React.useRef(Signal.new())
+
+	React.useEffect(function()
+		local connection = ReplicatedStorage.remotes.destructionFx.OnClientEvent:Connect(
+			function(worldPosition: Vector3, amount: number)
+				local screenPosition, inBounds = camera:WorldToViewportPoint(worldPosition)
+				if not inBounds then
+					return
+				end
+
+				emitSignal.current:Fire(
+					math.min(math.ceil(amount / 13), 10),
+					Vector2.new(screenPosition.X, screenPosition.Y)
+				)
+			end
+		)
+
+		return function()
+			connection:Disconnect()
+		end
+	end, {})
+
 	local modal, setModal = React.useState(nil :: any)
 	local onUpgradesPressed = React.useCallback(function()
 		setModal(function(current)
@@ -136,74 +164,84 @@ return function()
 	end, {})
 
 	return React.createElement(React.Fragment, nil, {
-		padding = React.createElement("UIPadding", {
-			PaddingLeft = UDim.new(0, 8),
-			PaddingRight = UDim.new(0, 8),
-			PaddingTop = UDim.new(0, 8),
-			PaddingBottom = UDim.new(0, 8),
+		particles = React.createElement(ParticlesControllerComponent, {
+			targetRef = targetRef,
+			emitSignal = emitSignal.current,
 		}),
-		topContainer = React.createElement("Frame", {
-			Position = UDim2.fromScale(0.5, 0),
-			AnchorPoint = Vector2.new(0.5, 0),
+		container = React.createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.fromScale(1, 0),
+			Size = UDim2.fromScale(1, 1),
 		}, {
-			layout = React.createElement("UIListLayout", {
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				VerticalAlignment = Enum.VerticalAlignment.Top,
-				Padding = UDim.new(0, 20),
-				SortOrder = Enum.SortOrder.LayoutOrder,
+			padding = React.createElement("UIPadding", {
+				PaddingLeft = UDim.new(0, 8),
+				PaddingRight = UDim.new(0, 8),
+				PaddingTop = UDim.new(0, 8),
+				PaddingBottom = UDim.new(0, 8),
 			}),
-			timer = React.createElement(TimeRemainingComponent, { LayoutOrder = 1 }),
-			scores = React.createElement(TeamScoresComponent, { LayoutOrder = 2 }),
-		}),
-		winDialog = React.createElement(WinDialogComponent),
-		leftContainer = React.createElement("Frame", {
-			Position = UDim2.fromScale(0, 0.5),
-			AnchorPoint = Vector2.new(0, 0.5),
-			Size = UDim2.fromScale(0.12, 1),
-			BackgroundTransparency = 1,
-		}, {
-			sizeConstraint = React.createElement("UISizeConstraint", {
-				MaxSize = Vector2.new(120, math.huge),
-			}),
-			layout = React.createElement("UIListLayout", {
-				HorizontalAlignment = Enum.HorizontalAlignment.Left,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 20),
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-			points = React.createElement(PointsComponent, {
-				LayoutOrder = 1,
-			}),
-			upgradesButton = React.createElement(UpgradesButtonComponent, {
-				LayoutOrder = 2,
-				onActivated = onUpgradesPressed,
-			}),
-			shopButton = React.createElement(ButtonComponent, {
-				LayoutOrder = 3,
-				Size = UDim2.fromScale(1, 0.45),
-				SizeConstraint = Enum.SizeConstraint.RelativeXX,
-				color = Color3.fromRGB(155, 255, 118),
-				onActivated = onShopPressed,
+			topContainer = React.createElement("Frame", {
+				Position = UDim2.fromScale(0.5, 0),
+				AnchorPoint = Vector2.new(0.5, 0),
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 0),
 			}, {
-				text = React.createElement("TextLabel", {
-					Text = "Shop",
-					Size = UDim2.fromScale(0.7, 0.9),
-					Position = UDim2.fromScale(0.5, 0.5),
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					TextScaled = true,
-					Font = Enum.Font.SourceSansBold,
-					TextColor3 = Color3.new(),
-					BackgroundTransparency = 1,
+				layout = React.createElement("UIListLayout", {
+					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					VerticalAlignment = Enum.VerticalAlignment.Top,
+					Padding = UDim.new(0, 20),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				timer = React.createElement(TimeRemainingComponent, { LayoutOrder = 1 }),
+				scores = React.createElement(TeamScoresComponent, { LayoutOrder = 2 }),
+			}),
+			winDialog = React.createElement(WinDialogComponent),
+			leftContainer = React.createElement("Frame", {
+				Position = UDim2.fromScale(0, 0.5),
+				AnchorPoint = Vector2.new(0, 0.5),
+				Size = UDim2.fromScale(0.12, 1),
+				BackgroundTransparency = 1,
+			}, {
+				sizeConstraint = React.createElement("UISizeConstraint", {
+					MaxSize = Vector2.new(120, math.huge),
+				}),
+				layout = React.createElement("UIListLayout", {
+					HorizontalAlignment = Enum.HorizontalAlignment.Left,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+					Padding = UDim.new(0, 20),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				points = React.createElement(PointsComponent, {
+					ref = targetRef,
+					LayoutOrder = 1,
+				}),
+				upgradesButton = React.createElement(UpgradesButtonComponent, {
+					LayoutOrder = 2,
+					onActivated = onUpgradesPressed,
+				}),
+				shopButton = React.createElement(ButtonComponent, {
+					LayoutOrder = 3,
+					Size = UDim2.fromScale(1, 0.45),
+					SizeConstraint = Enum.SizeConstraint.RelativeXX,
+					color = Color3.fromRGB(155, 255, 118),
+					onActivated = onShopPressed,
+				}, {
+					text = React.createElement("TextLabel", {
+						Text = "Shop",
+						Size = UDim2.fromScale(0.7, 0.9),
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						TextScaled = true,
+						Font = Enum.Font.SourceSansBold,
+						TextColor3 = Color3.new(),
+						BackgroundTransparency = 1,
+					}),
 				}),
 			}),
+			upgradesModal = if modal == Modals.Upgrades
+				then React.createElement(UpgradesModalComponent, { onExit = onExitModal })
+				else nil,
+			shopModal = if modal == Modals.Shop
+				then React.createElement(ShopModalComponent, { onExit = onExitModal })
+				else nil,
 		}),
-		upgradesModal = if modal == Modals.Upgrades
-			then React.createElement(UpgradesModalComponent, { onExit = onExitModal })
-			else nil,
-		shopModal = if modal == Modals.Shop
-			then React.createElement(ShopModalComponent, { onExit = onExitModal })
-			else nil,
 	})
 end
