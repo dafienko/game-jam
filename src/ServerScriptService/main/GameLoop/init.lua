@@ -19,14 +19,22 @@ local joinDoorTemplate = Lobby.joinDoorTemplate
 joinDoorTemplate.Parent = nil
 
 local function startNewGame(sourceMapModel: Model): () -> ()
+	local teamNameOverrides: { [number]: string } = {}
+	local teamNamesFolder = sourceMapModel:FindFirstChild("teamNames")
+	if teamNamesFolder then
+		for _, v: any in teamNamesFolder:GetChildren() do
+			teamNameOverrides[v.Value.Number] = v.Name
+		end
+	end
+
 	local model = sourceMapModel:Clone()
 	local teamColorSpawns = {}
 	for _, v in model:GetDescendants() do
 		if v:IsA("SpawnLocation") then
 			if teamColorSpawns[v.TeamColor] then
-				table.insert(teamColorSpawns[v.TeamColor], v)
+				table.insert(teamColorSpawns[v.TeamColor.Number], v)
 			else
-				teamColorSpawns[v.TeamColor.Name] = { v }
+				teamColorSpawns[v.TeamColor.Number] = { v }
 			end
 		end
 	end
@@ -37,11 +45,11 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 	local teams = {}
 	local teamDoors = {}
 	local i = 0
-	for teamColorName, spawnLocations in teamColorSpawns do
+	for colorId, spawnLocations in teamColorSpawns do
 		i += 1
 		local team = Instance.new("Team")
-		team.Name = teamColorName
-		team.TeamColor = BrickColor.new(teamColorName :: any)
+		team.TeamColor = BrickColor.new(colorId)
+		team.Name = teamNameOverrides[colorId] or team.TeamColor.Name
 		team.AutoAssignable = false
 		team:SetAttribute("score", 0)
 		team.Parent = Teams
