@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local BadgeService = game:GetService("BadgeService")
 local MarketPlaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
@@ -65,6 +66,10 @@ local function checkAttributeKill(char: Model)
 end
 
 local function onPlayerAdded(player: Player)
+	task.spawn(function()
+		BadgeService:AwardBadge(player.UserId, 3404558146216830)
+	end)
+
 	local playerData = PlayerData.loadPlayerData(player)
 	if not playerData then
 		return
@@ -119,10 +124,10 @@ local function onPlayerAdded(player: Player)
 	end, warn)
 
 	local function onNewBackpack(backpack)
-		-- if RunService:IsStudio() then
-		-- 	ServerStorage.Build:Clone().Parent = backpack
-		-- 	ServerStorage.Explode:Clone().Parent = backpack
-		-- end
+		if RunService:IsStudio() then
+			ServerStorage.Build:Clone().Parent = backpack
+			ServerStorage.Explode:Clone().Parent = backpack
+		end
 
 		Util.createTool(ToolNames.Sword).Parent = backpack
 		local ownsTripleRocket = player:GetAttribute(Products.GamePasses.tripleRocketLauncher.attribute)
