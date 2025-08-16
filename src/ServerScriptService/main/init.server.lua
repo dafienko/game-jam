@@ -66,6 +66,7 @@ local function checkAttributeKill(char: Model)
 end
 
 local function onPlayerAdded(player: Player)
+	print(player.Name)
 	task.spawn(function()
 		BadgeService:AwardBadge(player.UserId, 3404558146216830)
 	end)
@@ -205,7 +206,6 @@ local function onPlayerAdded(player: Player)
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
-
 for _, v in Players:GetPlayers() do
 	task.spawn(onPlayerAdded, v)
 end

@@ -48,7 +48,9 @@ function TeamDoor.new(model: Model, team: Team, spawnLocations: { SpawnLocation 
 		},
 	}, TeamDoor)
 
-	self:UpdateStatus()
+	-- task.spawn(function()
+	-- 	self:UpdateStatus()
+	-- end)
 
 	return self
 end

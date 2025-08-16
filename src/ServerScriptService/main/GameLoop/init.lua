@@ -43,7 +43,12 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 	model.Parent = game.Workspace
 
 	local teams = {}
-	local teamDoors = {}
+	local teamDoors: { TeamDoor.TeamDoor } = {}
+	local function updateStatus()
+		for _, v in teamDoors do
+			v:UpdateStatus()
+		end
+	end
 	local i = 0
 	for colorId, spawnLocations in teamColorSpawns do
 		i += 1
@@ -63,12 +68,8 @@ local function startNewGame(sourceMapModel: Model): () -> ()
 		table.insert(teamDoors, teamDoor)
 		door.Parent = Lobby
 
-		team.PlayerAdded:Connect(function()
-			teamDoor:UpdateStatus()
-		end)
-		team.PlayerRemoved:Connect(function()
-			teamDoor:UpdateStatus()
-		end)
+		team.PlayerAdded:Connect(updateStatus)
+		team.PlayerRemoved:Connect(updateStatus)
 	end
 
 	return function()
@@ -129,7 +130,11 @@ local function countdown(seconds: number)
 	end
 end
 
-local mapOrder = { maps.Castle, maps.FourTowers, maps.Animals }
+local mapOrder = {
+	maps.Castle,
+	maps.FourTowers,
+	maps.Animals,
+}
 local mapIndex = 1
 
 while true do
