@@ -201,7 +201,7 @@ return function()
 				BackgroundTransparency = 1,
 			}, {
 				sizeConstraint = React.createElement("UISizeConstraint", {
-					MaxSize = Vector2.new(120, math.huge),
+					MaxSize = Vector2.new(140, math.huge),
 				}),
 				layout = React.createElement("UIListLayout", {
 					HorizontalAlignment = Enum.HorizontalAlignment.Left,

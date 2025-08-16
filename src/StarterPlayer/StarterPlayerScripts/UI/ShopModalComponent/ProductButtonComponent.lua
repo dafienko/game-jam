@@ -13,13 +13,14 @@ type Props = {
 	Text: string,
 	infoType: Enum.InfoType,
 	onActivated: () -> (),
+	BackgroundColor3: Color3?,
 }
 
 return function(props: Props)
 	local price = GameUtil.useProductInfo(props.productId, props.infoType)
 
 	return React.createElement(ButtonComponent, {
-		color = Color3.fromHSV(0, 0, 1),
+		color = props.BackgroundColor3 or Color3.fromHSV(0, 0, 1),
 		LayoutOrder = props.LayoutOrder,
 		ClipsDescendants = true,
 		onActivated = props.onActivated,

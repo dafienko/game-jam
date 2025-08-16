@@ -198,7 +198,8 @@ return function(props: Props)
 						LayoutOrder = 2,
 						one = React.createElement(GamepassButtonComponent, {
 							LayoutOrder = 1,
-							Image = "",
+							BackgroundColor3 = Color3.new(),
+							Image = "rbxassetid://91730383116453",
 							Text = Products.GamePasses.tripleRocketLauncher.name,
 							productId = Products.GamePasses.tripleRocketLauncher.id,
 						}),

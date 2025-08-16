@@ -119,18 +119,23 @@ local function onPlayerAdded(player: Player)
 	end, warn)
 
 	local function onNewBackpack(backpack)
-		if RunService:IsStudio() then
-			ServerStorage.Build:Clone().Parent = backpack
-			ServerStorage.Explode:Clone().Parent = backpack
-		end
+		-- if RunService:IsStudio() then
+		-- 	ServerStorage.Build:Clone().Parent = backpack
+		-- 	ServerStorage.Explode:Clone().Parent = backpack
+		-- end
 
 		Util.createTool(ToolNames.Sword).Parent = backpack
-		if player:GetAttribute(Products.GamePasses.tripleRocketLauncher.attribute) then
+		local ownsTripleRocket = player:GetAttribute(Products.GamePasses.tripleRocketLauncher.attribute)
+		if ownsTripleRocket then
 			Util.createTool(ToolNames.TripleRocketLauncher).Parent = backpack
+		else
+			Util.createTool(ToolNames.RocketLauncher).Parent = backpack
 		end
-		Util.createTool(ToolNames.RocketLauncher).Parent = backpack
 		Util.createTool(ToolNames.Bomb).Parent = backpack
 		Util.createTool(ToolNames.Build).Parent = backpack
+		if ownsTripleRocket then
+			Util.createTool(ToolNames.RocketLauncher).Parent = backpack
+		end
 	end
 
 	player:GetAttributeChangedSignal(Products.GamePasses.tripleRocketLauncher.attribute):Connect(function()

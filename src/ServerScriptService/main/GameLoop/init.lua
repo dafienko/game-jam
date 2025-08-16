@@ -129,7 +129,7 @@ local function countdown(seconds: number)
 	end
 end
 
-local mapOrder = { maps.FourTowers, maps.Animals }
+local mapOrder = { maps.Castle, maps.FourTowers, maps.Animals }
 local mapIndex = 1
 
 while true do

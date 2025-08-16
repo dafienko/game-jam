@@ -12,12 +12,14 @@ type Props = {
 	LayoutOrder: number?,
 	Text: string,
 	Image: string,
+	BackgroundColor3: Color3?,
 	productId: number,
 }
 
 return function(props: Props)
 	return React.createElement(ProductButtonComponent, {
 		LayoutOrder = props.LayoutOrder,
+		BackgroundColor3 = props.BackgroundColor3,
 		productId = props.productId,
 		infoType = Enum.InfoType.GamePass,
 		Text = props.Text,
