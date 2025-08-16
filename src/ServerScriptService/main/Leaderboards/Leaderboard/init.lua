@@ -80,7 +80,7 @@ function Leaderboard.UpdatePlayerStanding(self: Leaderboard, player: Player, val
 end
 
 function Leaderboard._refresh(self: Leaderboard)
-	local pages = self.datastore:GetSortedAsync(false, 10)
+	local pages = self.datastore:GetSortedAsync(false, 20)
 	local page = pages:GetCurrentPage()
 
 	local userIds = Cryo.List.map(page, function(row)
@@ -90,15 +90,31 @@ function Leaderboard._refresh(self: Leaderboard)
 	end)
 
 	local userInfos = UsersService:GetUserInfosByUserIdsAsync(userIds)
+	local userInfoMap = {}
+	for _, userInfo in userInfos do
+		userInfoMap[userInfo.Id] = userInfo
+	end
 
 	local data: LeaderboardUiComponent.DataTable = {}
+	local n = 0
 	for i, v in page do
+		local userId = userIds[i]
+		local userInfo = userInfoMap[userId]
+		if not userInfo then
+			continue
+		end
+
+		n += 1
 		table.insert(data, {
 			userId = userIds[i],
 			value = v.value,
-			userName = userInfos[i].Username,
-			displayName = userInfos[i].DisplayName,
+			userName = userInfo.Username,
+			displayName = userInfo.DisplayName,
 		})
+
+		if n >= 10 then
+			break
+		end
 	end
 	self:_render(data)
 end

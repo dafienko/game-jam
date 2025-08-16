@@ -68,42 +68,46 @@ end
 local function onPlayerAdded(player: Player)
 	print(player.Name)
 	task.spawn(function()
-		BadgeService:AwardBadge(player.UserId, 3404558146216830)
+		if not BadgeService:UserHasBadgeAsync(player.UserId, 340455814621683) then
+			BadgeService:AwardBadge(player.UserId, 3404558146216830)
+		end
 	end)
 
-	local playerData = PlayerData.loadPlayerData(player)
-	if not playerData then
-		return
-	end
+	task.spawn(function()
+		local playerData = PlayerData.loadPlayerData(player)
+		if not playerData then
+			return
+		end
 
-	local leaderstats = Instance.new("Folder")
-	leaderstats.Name = "leaderstats"
+		local leaderstats = Instance.new("Folder")
+		leaderstats.Name = "leaderstats"
 
-	local kosValue = Instance.new("IntValue")
-	kosValue.Value = playerData.KOs
-	kosValue.Name = "KO's"
-	kosValue.Parent = leaderstats
-	PlayerData.onKOsChanged(player, function(kos)
-		kosValue.Value = kos
+		local kosValue = Instance.new("IntValue")
+		kosValue.Value = playerData.KOs
+		kosValue.Name = "KO's"
+		kosValue.Parent = leaderstats
+		PlayerData.onKOsChanged(player, function(kos)
+			kosValue.Value = kos
+		end)
+
+		local damageValue = Instance.new("IntValue")
+		damageValue.Value = playerData.Damage
+		damageValue.Name = "Damage"
+		damageValue.Parent = leaderstats
+		PlayerData.onDamageChanged(player, function(damage)
+			damageValue.Value = damage
+		end)
+
+		local winsValue = Instance.new("IntValue")
+		winsValue.Value = playerData.Wins
+		winsValue.Name = "Wins"
+		winsValue.Parent = leaderstats
+		PlayerData.onWinsChanged(player, function(wins)
+			winsValue.Value = wins
+		end)
+
+		leaderstats.Parent = player
 	end)
-
-	local damageValue = Instance.new("IntValue")
-	damageValue.Value = playerData.Damage
-	damageValue.Name = "Damage"
-	damageValue.Parent = leaderstats
-	PlayerData.onDamageChanged(player, function(damage)
-		damageValue.Value = damage
-	end)
-
-	local winsValue = Instance.new("IntValue")
-	winsValue.Value = playerData.Wins
-	winsValue.Name = "Wins"
-	winsValue.Parent = leaderstats
-	PlayerData.onWinsChanged(player, function(wins)
-		winsValue.Value = wins
-	end)
-
-	leaderstats.Parent = player
 
 	task.delay(5, function()
 		if player.Parent ~= Players then
