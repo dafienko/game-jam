@@ -11,23 +11,14 @@ local ParticleComponent = require(script.ParticleComponent)
 local POOL_SIZE = 40
 
 type Props = {
-	targetRef: { current: GuiObject? },
-	emitSignal: Signal.Signal<(number, Vector2)>,
+	emitSignal: Signal.Signal<(number, Vector2, Vector2)>,
 }
-
-local function getGuiObjectCenter(object: GuiObject): Vector2
-	return object.AbsolutePosition
-		+ object.AbsoluteSize / 2
-		- (if object.Parent and object.Parent:IsA("GuiObject") then object.Parent.AbsolutePosition else Vector2.zero)
-end
 
 return function(props: Props)
 	local childrenRef = React.useRef({})
 	for i = 1, POOL_SIZE do
 		local spawnPosition, setSpawnPosition = React.useState(nil :: Vector2?)
-		local destinationPosition, setDestinationPosition =
-			React.useState(if props.targetRef.current then getGuiObjectCenter(props.targetRef.current) else nil)
-
+		local destinationPosition, setDestinationPosition = React.useState(Vector2.zero)
 		local availableRef = React.useRef(true)
 		local onComplete = React.useCallback(function()
 			availableRef.current = true
@@ -44,17 +35,15 @@ return function(props: Props)
 	end
 
 	React.useEffect(function()
-		local connection = props.emitSignal:Connect(function(amount, position)
+		local connection = props.emitSignal:Connect(function(amount, source, destination)
 			for _, particle in childrenRef.current do
 				if not particle.availableRef.current then
 					continue
 				end
 
 				particle.availableRef.current = false
-				particle.setSpawnPosition(position)
-				particle.setDestinationPosition(
-					if props.targetRef.current then getGuiObjectCenter(props.targetRef.current) else nil
-				)
+				particle.setSpawnPosition(source)
+				particle.setDestinationPosition(destination)
 
 				amount -= 1
 				if amount <= 0 then

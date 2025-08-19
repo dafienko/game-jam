@@ -5,14 +5,22 @@ local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui
 
 local React = require(ReplicatedStorage.modules.dependencies.React)
 local ReactRoblox = require(ReplicatedStorage.modules.dependencies.ReactRoblox)
+local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
 
-local MainUiComponent = require(script.MainUiComponent)
+local ParticleControllerComponent = require(script.ParticleControllerComponent)
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "UI"
+screenGui.Name = "Particles"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = PlayerGui
 
-ReactRoblox.createRoot(screenGui):render(React.createElement(MainUiComponent))
+local emitSignal = Signal.new()
+ReactRoblox.createRoot(screenGui):render(React.createElement(ParticleControllerComponent, { emitSignal = emitSignal }))
+
+return {
+	emit = function(n: number, source: Vector2, destination: Vector2)
+		emitSignal:Fire(n, source, destination)
+	end,
+}

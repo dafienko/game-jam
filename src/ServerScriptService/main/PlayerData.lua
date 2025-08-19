@@ -13,9 +13,10 @@ local Levels = require(ReplicatedStorage.modules.game.Levels)
 local updateClientLevelsRemote = ReplicatedStorage.remotes.updateClientLevels
 local updateClientPointsRemote = ReplicatedStorage.remotes.updateClientPoints
 
-local POINTS_PER_DAMAGE = 1
+local POINTS_PER_DAMAGE = 0.5
 local POINTS_PER_KO = 50
 local POINTS_PER_WIN = 500
+local POINTS_PER_PART_COLLECTED = 10
 
 local function getInitialLevels(): { [string]: number }
 	return Cryo.Dictionary.map(Levels.LEVELS, function(level, statId)
@@ -25,6 +26,7 @@ end
 
 local profileTemplate = {
 	Damage = 0,
+	PartsCollected = 0,
 	KOs = 0,
 	Wins = 0,
 	Points = 0,
@@ -39,6 +41,7 @@ local Profiles: { [Player]: Profile } = {}
 local dataSignals: {
 	[Player]: {
 		Damage: Signal.Signal<number>,
+		PartsCollected: Signal.Signal<number>,
 		KOs: Signal.Signal<number>,
 		Wins: Signal.Signal<number>,
 		Points: Signal.Signal<number>,
@@ -52,6 +55,7 @@ local PlayerData = {}
 function PlayerData.loadPlayerData(player: Player): ProfileData?
 	dataSignals[player] = {
 		Damage = Signal.new(),
+		PartsCollected = Signal.new(),
 		KOs = Signal.new(),
 		Wins = Signal.new(),
 		Points = Signal.new(),
@@ -76,6 +80,7 @@ function PlayerData.loadPlayerData(player: Player): ProfileData?
 		Leaderboards.updatePlayerStanding(player, {
 			wins = lastSavedData.Wins,
 			damage = lastSavedData.Damage,
+			partsCollected = lastSavedData.PartsCollected,
 			KOs = lastSavedData.KOs,
 		})
 	end)
@@ -133,7 +138,19 @@ function PlayerData.addDamage(player: Player, delta: number)
 
 	profile.Data.Damage += delta
 	signals.Damage:Fire(profile.Data.Damage)
-	PlayerData.addPoints(player, delta * POINTS_PER_DAMAGE)
+	PlayerData.addPoints(player, math.ceil(delta * POINTS_PER_DAMAGE))
+end
+
+function PlayerData.addPartCollected(player: Player)
+	local profile = Profiles[player]
+	local signals = dataSignals[player]
+	if not (profile and signals) then
+		return
+	end
+
+	profile.Data.PartsCollected += 1
+	signals.PartsCollected:Fire(profile.Data.PartsCollected)
+	PlayerData.addPoints(player, math.ceil(POINTS_PER_PART_COLLECTED))
 end
 
 function PlayerData.addKO(player: Player)
@@ -145,7 +162,7 @@ function PlayerData.addKO(player: Player)
 
 	profile.Data.KOs += 1
 	signals.KOs:Fire(profile.Data.KOs)
-	PlayerData.addPoints(player, POINTS_PER_KO)
+	PlayerData.addPoints(player, math.ceil(POINTS_PER_KO))
 end
 
 function PlayerData.addWin(player: Player)
@@ -157,7 +174,7 @@ function PlayerData.addWin(player: Player)
 
 	profile.Data.Wins += 1
 	signals.Wins:Fire(profile.Data.Wins)
-	PlayerData.addPoints(player, POINTS_PER_WIN)
+	PlayerData.addPoints(player, math.ceil(POINTS_PER_WIN))
 end
 
 local function queuePointsUpdate(player: Player)
@@ -214,6 +231,15 @@ function PlayerData.onDamageChanged(player: Player, callback: (number) -> ()): S
 	end
 
 	return signals.Damage:Connect(callback)
+end
+
+function PlayerData.onPartsCollectedChanged(player: Player, callback: (number) -> ()): Signal.Connection?
+	local signals = dataSignals[player]
+	if not signals then
+		return
+	end
+
+	return signals.PartsCollected:Connect(callback)
 end
 
 function PlayerData.onKOsChanged(player: Player, callback: (number) -> ()): Signal.Connection?

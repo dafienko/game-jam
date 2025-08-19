@@ -98,6 +98,14 @@ local function onPlayerAdded(player: Player)
 			damageValue.Value = damage
 		end)
 
+		local partsCollectedValue = Instance.new("IntValue")
+		partsCollectedValue.Value = playerData.PartsCollected
+		partsCollectedValue.Name = "Parts"
+		partsCollectedValue.Parent = leaderstats
+		PlayerData.onPartsCollectedChanged(player, function(partsCollected)
+			partsCollectedValue.Value = partsCollected
+		end)
+
 		local winsValue = Instance.new("IntValue")
 		winsValue.Value = playerData.Wins
 		winsValue.Name = "Wins"
@@ -180,15 +188,56 @@ local function onPlayerAdded(player: Player)
 		end
 		updateHumanoidStats()
 
-		local connection = PlayerData.onLevelsChanged(player, function(levelId)
-			if levelId == Levels.STAT_IDs.Character_WalkSpeed or levelId == Levels.STAT_IDs.Character_JumpHeight then
-				updateHumanoidStats()
+		local connections = {
+			PlayerData.onLevelsChanged(player, function(levelId)
+				if
+					levelId == Levels.STAT_IDs.Character_WalkSpeed
+					or levelId == Levels.STAT_IDs.Character_JumpHeight
+				then
+					updateHumanoidStats()
+				end
+			end) :: any,
+		}
+
+		for _, v in char:GetChildren() do
+			if not v:IsA("BasePart") then
+				continue
 			end
-		end)
+
+			table.insert(
+				connections,
+				v.Touched:Connect(function(hit: BasePart)
+					if player.Parent ~= Players then
+						return
+					end
+
+					if hit.Anchored then
+						return
+					end
+
+					local map = game.Workspace:FindFirstChild("map")
+					if not (map and hit:IsDescendantOf(map)) then
+						return
+					end
+
+					if #hit:GetJoints() > 0 then
+						return
+					end
+
+					local size = hit.Size
+					local cf = hit.CFrame
+					local color = hit.Color
+					hit:Destroy()
+
+					PlayerData.addPartCollected(player)
+					remotes.collectFx:FireClient(player, cf, size, color)
+				end)
+			)
+		end
 
 		humanoid.Died:Connect(function()
-			if connection then
-				connection:Disconnect()
+			for _, v in connections do
+				v:Disconnect()
 			end
 
 			checkAttributeKill(char)
@@ -202,8 +251,6 @@ local function onPlayerAdded(player: Player)
 			player:LoadCharacter()
 		end)
 		onNewBackpack(player.Backpack)
-
-		char.Humanoid:ApplyDescription(game.Players:GetHumanoidDescriptionFromUserId(player.UserId))
 	end)
 
 	player:LoadCharacter()

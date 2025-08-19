@@ -1,12 +1,14 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayerScripts = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
 
 local React = require(ReplicatedStorage.modules.dependencies.React)
 local ClientData = require(ReplicatedStorage.modules.game.ClientData)
 local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
 local Levels = require(ReplicatedStorage.modules.game.Levels)
-local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
+local ParticlesUi = require(StarterPlayerScripts.ParticlesUi)
+local CollectFx = require(StarterPlayerScripts.CollectFx)
 
 local TimeRemainingComponent = require(script.Parent.TimeRemainingComponent)
 local WinDialogComponent = require(script.Parent.WinDialogComponent)
@@ -14,7 +16,6 @@ local TeamScoresComponent = require(script.Parent.TeamScoresComponent)
 local UpgradesModalComponent = require(script.Parent.UpgradesModalComponent)
 local ShopModalComponent = require(script.Parent.ShopModalComponent)
 local ButtonComponent = require(script.Parent.ButtonComponent)
-local ParticlesControllerComponent = require(script.Parent.ParticleControllerComponent)
 
 local camera = game.Workspace.CurrentCamera
 
@@ -115,26 +116,47 @@ local Modals = {
 }
 
 return function()
-	local targetRef = React.useRef(nil)
-	local emitSignal = React.useRef(Signal.new())
+	local targetRef = (React.useRef(nil) :: any) :: { current: GuiObject }
 
 	React.useEffect(function()
-		local connection = ReplicatedStorage.remotes.destructionFx.OnClientEvent:Connect(
-			function(worldPosition: Vector3, amount: number)
-				local screenPosition, inBounds = camera:WorldToViewportPoint(worldPosition)
-				if not inBounds then
-					return
-				end
-
-				emitSignal.current:Fire(
-					math.min(math.ceil(amount / 13), 10),
-					Vector2.new(screenPosition.X, screenPosition.Y)
-				)
+		local function emitAtWorldPosition(p: Vector3, n: number)
+			local screenPosition, inBounds = camera:WorldToViewportPoint(p)
+			if not inBounds then
+				return
 			end
-		)
+
+			ParticlesUi.emit(
+				n,
+				Vector2.new(screenPosition.X, screenPosition.Y),
+				targetRef.current.AbsolutePosition + targetRef.current.AbsoluteSize
+			)
+		end
+
+		local connections = {
+			ReplicatedStorage.remotes.destructionFx.OnClientEvent:Connect(
+				function(worldPosition: Vector3, amount: number)
+					emitAtWorldPosition(worldPosition, math.min(math.ceil(amount / 13), 10))
+				end
+			),
+
+			ReplicatedStorage.remotes.collectFx.OnClientEvent:Connect(
+				function(cf: CFrame, size: Vector3, color: Color3)
+					CollectFx.fxAt(cf, size, color)
+
+					for i = 1, math.min(math.ceil(math.random(3, 4)), 10) do
+						emitAtWorldPosition(
+							(cf * CFrame.new(size * Vector3.new(math.random(), math.random(), math.random()))).Position,
+							1
+						)
+					end
+				end
+			),
+		}
 
 		return function()
-			connection:Disconnect()
+			for _, v in connections do
+				v:Disconnect()
+			end
 		end
 	end, {})
 
@@ -164,10 +186,6 @@ return function()
 	end, {})
 
 	return React.createElement(React.Fragment, nil, {
-		particles = React.createElement(ParticlesControllerComponent, {
-			targetRef = targetRef,
-			emitSignal = emitSignal.current,
-		}),
 		container = React.createElement("Frame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.fromScale(1, 1),

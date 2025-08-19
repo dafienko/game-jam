@@ -15,6 +15,27 @@ local Levels = require(game.ReplicatedStorage.modules.game.Levels)
 
 local rocketTemplate = ReplicatedStorage.assets.rocket
 
+local DEBRIS_TAG = "map_debris"
+local DEBRIS_AGE_ATTRIBUTE = "debrisTime"
+
+task.spawn(function()
+	while task.wait(10) do
+		for _, v in CollectionService:GetTagged(DEBRIS_TAG) do
+			if not v then
+				continue
+			end
+
+			local t = v:GetAttribute(DEBRIS_AGE_ATTRIBUTE) or 0
+			if time() - t < 20 then
+				continue
+			end
+
+			v:Destroy()
+			task.wait()
+		end
+	end
+end)
+
 local ExplosionsInterface = {}
 
 local function applyExplosionImpulse(
@@ -118,6 +139,35 @@ local function explodeAtPosition(
 		end)
 	end
 
+	local partsToCheck = {}
+	local checkQueued = false
+	local function checkPart(p: BasePart?)
+		if not p then
+			return
+		end
+
+		partsToCheck[p] = true
+		if checkQueued then
+			return
+		end
+
+		checkQueued = true
+		task.defer(function()
+			for part, _ in partsToCheck do
+				if not (part and part:IsDescendantOf(game)) then
+					continue
+				end
+
+				if #part:GetJoints() > 0 then
+					continue
+				end
+
+				part:SetAttribute(DEBRIS_AGE_ATTRIBUTE, time())
+				part:AddTag(DEBRIS_TAG)
+			end
+		end)
+	end
+
 	explosion.Hit:Connect(function(part, dist)
 		local player, char = Util.getPlayerAndCharacterFromInstance(part)
 		if player or char then
@@ -133,9 +183,16 @@ local function explodeAtPosition(
 		local n = 0
 		if #joints > 0 then
 			for _, v in joints do
+				if not v:IsA("WeldConstraint") then
+					continue
+				end
+
 				if math.random() > destroyJointPercent * strength then
 					continue
 				end
+
+				checkPart(v.Part0)
+				checkPart(v.Part1)
 
 				n += 1
 				v:Destroy()
