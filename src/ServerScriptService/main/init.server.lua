@@ -129,12 +129,11 @@ local function onPlayerAdded(player: Player)
 		player:LoadCharacter()
 	end)
 
-	xpcall(function()
-		player:SetAttribute(
-			Products.GamePasses.tripleRocketLauncher.attribute,
-			MarketPlaceService:UserOwnsGamePassAsync(player.UserId, Products.GamePasses.tripleRocketLauncher.id)
-		)
-	end, warn)
+	for _, v in Products.GamePasses :: { Products.GamePass } do
+		xpcall(function()
+			player:SetAttribute(v.attribute, MarketPlaceService:UserOwnsGamePassAsync(player.UserId, v.id))
+		end, warn)
+	end
 
 	local function onNewBackpack(backpack)
 		if RunService:IsStudio() then

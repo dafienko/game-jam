@@ -9,6 +9,7 @@ local ProfileStore = require(ReplicatedStorage.modules.dependencies.ProfileStore
 local Signal = require(ReplicatedStorage.modules.dependencies.Signal)
 local Leaderboards = require(ServerScriptService.main.Leaderboards)
 local Levels = require(ReplicatedStorage.modules.game.Levels)
+local Products = require(ReplicatedStorage.modules.game.Products)
 
 local updateClientLevelsRemote = ReplicatedStorage.remotes.updateClientLevels
 local updateClientPointsRemote = ReplicatedStorage.remotes.updateClientPoints
@@ -204,6 +205,10 @@ function PlayerData.addPoints(player: Player, amount: number): boolean
 	local signals = dataSignals[player]
 	if not (profile and signals) then
 		return false
+	end
+
+	if player:GetAttribute(Products.GamePasses.doubleBricks.attribute) then
+		amount *= 2
 	end
 
 	profile.Data.Points += amount

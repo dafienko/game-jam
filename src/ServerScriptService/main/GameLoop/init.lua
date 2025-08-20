@@ -131,8 +131,8 @@ local function countdown(seconds: number)
 end
 
 local mapOrder = {
-	maps.Castle,
 	maps.FourTowers,
+	maps.Castle,
 	maps.Animals,
 }
 local mapIndex = 1

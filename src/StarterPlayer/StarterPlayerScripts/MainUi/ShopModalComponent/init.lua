@@ -203,6 +203,13 @@ return function(props: Props)
 							Text = Products.GamePasses.tripleRocketLauncher.name,
 							productId = Products.GamePasses.tripleRocketLauncher.id,
 						}),
+						two = React.createElement(GamepassButtonComponent, {
+							LayoutOrder = 2,
+							BackgroundColor3 = Color3.new(),
+							Image = "rbxassetid://97929281785483",
+							Text = Products.GamePasses.doubleBricks.name,
+							productId = Products.GamePasses.doubleBricks.id,
+						}),
 					}),
 				}),
 			}),

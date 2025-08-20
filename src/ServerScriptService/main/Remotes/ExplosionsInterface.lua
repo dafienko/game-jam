@@ -72,6 +72,7 @@ local function explodeAtPosition(
 	position: Vector3,
 	blastRadius: number,
 	destroyJointPercent: number,
+	playerDamageFactor: number,
 	impulse: Vector3 | number
 )
 	local explosion = Instance.new("Explosion")
@@ -83,6 +84,8 @@ local function explodeAtPosition(
 
 	task.spawn(Util.playSoundAtPositionAsync, "rbxassetid://262562442", 30, 600, 1.1, position)
 
+	local playerDamageRadius = blastRadius * 4
+	local maxDamageThresholdRadius = 4
 	for _, v in Players:GetPlayers() do
 		if v == fromPlayer then
 			continue
@@ -100,12 +103,15 @@ local function explodeAtPosition(
 		end
 
 		local dist = (hrp.Position - position).Magnitude
-		if dist > blastRadius then
+		if dist > playerDamageRadius then
 			continue
 		end
 
-		local strength = 1 - math.pow(math.clamp(dist / blastRadius, 0, 1), 3)
-		Util.playerDamageCharacter(fromPlayer, char, strength * destroyJointPercent * 200)
+		local strength = math.pow(
+			1 - math.clamp((dist - maxDamageThresholdRadius) / (playerDamageRadius - maxDamageThresholdRadius), 0, 1),
+			3
+		)
+		Util.playerDamageCharacter(fromPlayer, char, strength * destroyJointPercent * playerDamageFactor)
 		if humanoid.Health <= 0 then
 			for _, v in char:GetChildren() do
 				if not v:IsA("BasePart") then
@@ -214,7 +220,7 @@ if RunService:IsStudio() then
 	function ExplosionsInterface.onExplodeAtPosition(player: Player, position: Vector3)
 		assert(t.Vector3(position))
 
-		explodeAtPosition(player, position, 15, 1, 500)
+		explodeAtPosition(player, position, 15, 1, 100, 500)
 	end
 end
 
@@ -247,7 +253,7 @@ local function propelRocket(rocket: Model, player: Player)
 	local function explode(position: Vector3)
 		heartbeatConnection:Disconnect()
 		rocket:Destroy()
-		explodeAtPosition(player, position, explosionSize, explosionPower, dir * 2000 * explosionPower)
+		explodeAtPosition(player, position, explosionSize, explosionPower, 100, dir * 2000 * explosionPower)
 	end
 
 	local origin = rocket:GetPivot()
@@ -359,7 +365,7 @@ local function onBombAdded(bomb: Model)
 		end
 	end
 
-	explodeAtPosition(fromPlayer, prim.Position, explosionSize, explosionPower, 1000 * explosionPower)
+	explodeAtPosition(fromPlayer, prim.Position, explosionSize, explosionPower, 110, 1000 * explosionPower)
 	bomb:Destroy()
 end
 

@@ -20,15 +20,22 @@ local function onTripleRocketLauncherPurchase(receiptInfo, player: Player): bool
 	return true
 end
 
+local function onDoubleBricksPurchase(receiptInfo, player: Player): boolean
+	player:SetAttribute(Products.GamePasses.doubleBricks.attribute, true)
+	return true
+end
+
 local productFunctions: { [number]: ProductFunction } = {
 	[Products.DevProducts.smallBrickPack.id] = getBrickProductHandler(1000),
 	[Products.DevProducts.mediumBrickPack.id] = getBrickProductHandler(3500),
 	[Products.DevProducts.largeBrickPack.id] = getBrickProductHandler(15000),
 
 	[Products.GamePasses.tripleRocketLauncher.id] = onTripleRocketLauncherPurchase,
+	[Products.GamePasses.doubleBricks.id] = onDoubleBricksPurchase,
 }
 
 return function(receiptInfo)
+	print("ProcessReceipt", "playerId:", receiptInfo.PlayerId, "productId:", receiptInfo.ProductId, receiptInfo)
 	local userId = receiptInfo.PlayerId
 	local productId = receiptInfo.ProductId
 

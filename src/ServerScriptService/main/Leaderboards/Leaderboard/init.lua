@@ -22,7 +22,6 @@ local PODIUM_ANIMATIONS = Cryo.List.map({
 	anim.AnimationId = id
 	return anim
 end)
-local HUMANOID_SCALE = 1.5
 
 local Leaderboard = {}
 Leaderboard.__index = Leaderboard
@@ -144,18 +143,21 @@ function Leaderboard._render(self: Leaderboard, data: LeaderboardUiComponent.Dat
 				char:Destroy()
 				return
 			end
-
+			char.PrimaryPart = char.HumanoidRootPart
 			char.Name = row.displayName
-			local humanoid: any = char.Humanoid
-			humanoid.HeadScale.Value *= HUMANOID_SCALE
-			humanoid.BodyDepthScale.Value *= HUMANOID_SCALE
-			humanoid.BodyWidthScale.Value *= HUMANOID_SCALE
-			humanoid.BodyHeightScale.Value *= HUMANOID_SCALE
+
+			local humanoid: Humanoid = char.Humanoid
+			humanoid.EvaluateStateMachine = false
 
 			local animator = humanoid:FindFirstAncestorOfClass("Animator") or Instance.new("Animator", humanoid)
 			local prim = char.PrimaryPart
 			prim.Anchored = true
-			local offset = (podiumPart.Size.Y + prim.Size.Y) / 2 + humanoid.HipHeight * HUMANOID_SCALE
+			local offset = (podiumPart.Size.Y + prim.Size.Y) / 2
+			if humanoid.RigType == Enum.HumanoidRigType.R6 then
+				offset += char["Left Leg"].Size.Y
+			else
+				offset += humanoid.HipHeight
+			end
 			char:PivotTo(podiumPart.CFrame * CFrame.new(0, offset, 0))
 			char.Parent = podiumPart
 
