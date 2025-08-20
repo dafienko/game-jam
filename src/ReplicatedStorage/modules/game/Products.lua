@@ -33,7 +33,7 @@ return {
 			attribute = "ownsTripleRocketLauncher",
 		} :: GamePass,
 		doubleBricks = {
-			name = "Double XP",
+			name = "2x Bricks",
 			id = 1409880496,
 			attribute = "ownsDoubleBricks",
 		} :: GamePass,
