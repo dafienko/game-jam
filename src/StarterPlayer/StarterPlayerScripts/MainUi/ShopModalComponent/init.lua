@@ -173,8 +173,19 @@ return function(props: Props)
 					PaddingRight = UDim.new(0, 8),
 				}),
 				content = React.createElement(React.Fragment, nil, {
-					row1 = React.createElement(UpgradeCategoryRowComponent, {
+					productsHeader = React.createElement("TextLabel", {
 						LayoutOrder = 1,
+						Text = "- Dev Products -",
+						Size = UDim2.new(1, 0, 0, 35),
+						BackgroundTransparency = 1,
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						Position = UDim2.fromScale(0.5, 0.5),
+						TextScaled = true,
+						Font = Enum.Font.SourceSansBold,
+						TextColor3 = Color3.fromHSV(0, 0, 0.2),
+					}),
+					row1 = React.createElement(UpgradeCategoryRowComponent, {
+						LayoutOrder = 2,
 						one = React.createElement(BrickButtonComponent, {
 							LayoutOrder = 1,
 							imageText = "🧱",
@@ -194,8 +205,19 @@ return function(props: Props)
 							productId = Products.DevProducts.largeBrickPack.id,
 						}),
 					}),
+					passesHeader = React.createElement("TextLabel", {
+						LayoutOrder = 3,
+						Text = "- Passes -",
+						Size = UDim2.new(1, 0, 0, 35),
+						BackgroundTransparency = 1,
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						Position = UDim2.fromScale(0.5, 0.5),
+						TextScaled = true,
+						Font = Enum.Font.SourceSansBold,
+						TextColor3 = Color3.fromHSV(0, 0, 0.2),
+					}),
 					row2 = React.createElement(UpgradeCategoryRowComponent, {
-						LayoutOrder = 2,
+						LayoutOrder = 4,
 						one = React.createElement(GamepassButtonComponent, {
 							LayoutOrder = 1,
 							BackgroundColor3 = Color3.new(),
