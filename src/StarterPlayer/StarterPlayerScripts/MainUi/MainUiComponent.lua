@@ -2,13 +2,14 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterPlayerScripts = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+local player = game:GetService("Players").LocalPlayer
 
 local React = require(ReplicatedStorage.modules.dependencies.React)
 local ClientData = require(ReplicatedStorage.modules.game.ClientData)
 local GameUtil = require(ReplicatedStorage.modules.game.GameUtil)
 local Levels = require(ReplicatedStorage.modules.game.Levels)
-local ParticlesUi = require(StarterPlayerScripts.ParticlesUi)
 local CollectFx = require(StarterPlayerScripts.CollectFx)
+local Products = require(ReplicatedStorage.modules.game.Products)
 
 local TimeRemainingComponent = require(script.Parent.TimeRemainingComponent)
 local WinDialogComponent = require(script.Parent.WinDialogComponent)
@@ -21,21 +22,50 @@ local camera = game.Workspace.CurrentCamera
 
 local PointsComponent = React.forwardRef(function(props: { LayoutOrder: number }, ref)
 	local points = ClientData.usePoints()
+	local hasDoubleBricks = GameUtil.useAttribute(player, Products.GamePasses.doubleBricks.attribute)
 
-	return React.createElement("TextLabel", {
+	return React.createElement("Frame", {
 		ref = ref,
 		LayoutOrder = props.LayoutOrder,
-		Size = UDim2.fromScale(1, 0.2),
+		Size = UDim2.fromScale(1, 0.4),
 		SizeConstraint = Enum.SizeConstraint.RelativeXX,
 		BackgroundTransparency = 1,
-		Text = `{GameUtil.commaNumber(points)} 🧱`,
-		TextScaled = true,
-		Font = Enum.Font.SourceSansBold,
-		TextColor3 = Color3.fromHSV(0, 0, 1),
 	}, {
-		stroke = React.createElement("UIStroke", {
-			Thickness = 1,
-			Color = Color3.fromHSV(0, 0, 0.3),
+		layout = React.createElement("UIListLayout", {
+			HorizontalAlignment = Enum.HorizontalAlignment.Left,
+			VerticalAlignment = Enum.VerticalAlignment.Top,
+			Padding = UDim.new(0, 0),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			HorizontalFlex = Enum.UIFlexAlignment.Fill,
+		}),
+		doubleBricks = React.createElement("TextLabel", {
+			LayoutOrder = 1,
+			Size = UDim2.fromScale(0, 0.35),
+			Visible = hasDoubleBricks,
+			BackgroundTransparency = 1,
+			Text = `x2 🧱 Active!`,
+			TextScaled = true,
+			Font = Enum.Font.SourceSansBold,
+			TextColor3 = Color3.fromHSV(0.144597, 0.858824, 1),
+		}, {
+			stroke = React.createElement("UIStroke", {
+				Thickness = 1,
+				Color = Color3.fromHSV(0, 0, 0.3),
+			}),
+		}),
+		points = React.createElement("TextLabel", {
+			Size = UDim2.fromScale(0, 0.65),
+			LayoutOrder = 2,
+			BackgroundTransparency = 1,
+			Text = `{GameUtil.commaNumber(points)} 🧱`,
+			TextScaled = true,
+			Font = Enum.Font.SourceSansBold,
+			TextColor3 = Color3.fromHSV(0, 0, 1),
+		}, {
+			stroke = React.createElement("UIStroke", {
+				Thickness = 1,
+				Color = Color3.fromHSV(0, 0, 0.3),
+			}),
 		}),
 	})
 end)
@@ -115,7 +145,11 @@ local Modals = {
 	Shop = 3,
 }
 
-return function()
+type Props = {
+	emitBrickFx: (n: number, source: Vector2, destination: Vector2) -> (),
+}
+
+return function(props: Props)
 	local targetRef = (React.useRef(nil) :: any) :: { current: GuiObject }
 
 	React.useEffect(function()
@@ -125,7 +159,7 @@ return function()
 				return
 			end
 
-			ParticlesUi.emit(
+			props.emitBrickFx(
 				n,
 				Vector2.new(screenPosition.X, screenPosition.Y),
 				targetRef.current.AbsolutePosition + targetRef.current.AbsoluteSize
@@ -158,7 +192,7 @@ return function()
 				v:Disconnect()
 			end
 		end
-	end, {})
+	end, { props.emitBrickFx })
 
 	local modal, setModal = React.useState(nil :: any)
 	local onUpgradesPressed = React.useCallback(function()
